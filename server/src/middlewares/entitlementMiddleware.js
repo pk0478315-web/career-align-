@@ -2,28 +2,31 @@ const { getPlan } = require('../config/entitlements');
 const { sendError } = require('../utils/response');
 
 const requireFeature = (featureName) => {
-  return (req, res, next) => {
-    const userPlan = req.user?.plan_type || 'free';
-    const plan = getPlan(userPlan);
-    
-    if (!plan.features.includes(featureName)) {
-      return sendError(
-        res, 
-        `Access denied. The feature '${featureName}' requires a plan upgrade.`, 
-        403, 
-        'UPGRADE_REQUIRED'
-      );
+  return async (req, res, next) => {
+    try {
+      const dbStore = require('../data/dbStore');
+      const usage = await dbStore.getUserPlanAndUsage(req.user.id);
+      const plan = getPlan(usage.plan_type);
+      
+      if (!plan.features.includes(featureName)) {
+        return sendError(
+          res, 
+          `Access denied. The feature '${featureName}' requires a plan upgrade.`, 
+          403, 
+          'UPGRADE_REQUIRED'
+        );
+      }
+      next();
+    } catch (err) {
+      next(err);
     }
-    next();
   };
 };
 
 const checkAiUsageLimit = async (req, res, next) => {
   const dbStore = require('../data/dbStore');
-  const userPlan = req.user?.plan_type || 'free';
-  const plan = getPlan(userPlan);
-  
   const usage = await dbStore.getUserPlanAndUsage(req.user.id);
+  const plan = getPlan(usage.plan_type);
   if (usage.ai_usage_count >= plan.limits.ai_usage) {
     return sendError(
       res,

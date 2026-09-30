@@ -99,7 +99,7 @@ export const api = {
 
   // Subscriptions & Plans
   getMyPlan: () => apiClient.get('/subscriptions/me'),
-  upgradePlanTestOnly: (payload) => apiClient.post('/subscriptions/upgrade', payload),
+  createCheckoutSession: (payload) => apiClient.post('/subscriptions/upgrade', payload),
 
   // Admin
   getAdminStats: () => apiClient.get('/admin/stats'),

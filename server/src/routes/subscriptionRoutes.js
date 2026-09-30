@@ -6,6 +6,6 @@ const { requireAuth } = require('../middlewares/auth');
 router.use(requireAuth);
 
 router.get('/me', subscriptionController.getMyPlan);
-router.post('/upgrade', subscriptionController.upgradePlanTestOnly);
+router.post('/upgrade', subscriptionController.createCheckoutSession);
 
 module.exports = router;

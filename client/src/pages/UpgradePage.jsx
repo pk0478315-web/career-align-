@@ -31,10 +31,15 @@ export const UpgradePage = () => {
     
     try {
       setLoading(true);
-      await api.upgradePlanTestOnly({ targetPlan });
-      await loadPlan();
-      alert(`Successfully upgraded to ${targetPlan.toUpperCase()}!`);
-      navigate('/dashboard');
+      const upgradeRes = await api.createCheckoutSession({ targetPlan });
+      
+      if (!upgradeRes.data.devMode && upgradeRes.data.checkoutUrl) {
+        window.location.href = upgradeRes.data.checkoutUrl;
+      } else {
+        await loadPlan();
+        alert(upgradeRes.data.message);
+        navigate('/dashboard');
+      }
     } catch (err) {
       alert('Upgrade failed. Please try again.');
     } finally {

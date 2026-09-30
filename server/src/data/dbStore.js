@@ -853,15 +853,98 @@ const dbStore = {
     }
   },
 
-  async getUserPlanAndUsage(userId) {
+  async getSubscription(userId) {
     if (useDb()) {
       const dbClient = supabase;
-      if (!dbClient) return { plan_type: 'free', ai_usage_count: 0 };
-      const { data } = await dbClient.from('users').select('plan_type, ai_usage_count').eq('id', userId).single();
-      return data || { plan_type: 'free', ai_usage_count: 0 };
+      if (!dbClient) return null;
+      const { data, error } = await dbClient.from('subscriptions').select('*').eq('user_id', userId).single();
+      if (error && error.code !== 'PGRST116') {
+        console.error('Supabase select subscription error:', error);
+      }
+      return data;
     }
-    const u = usersTable.find(u => u.id === userId);
-    return u ? { plan_type: u.plan_type || 'free', ai_usage_count: u.ai_usage_count || 0 } : { plan_type: 'free', ai_usage_count: 0 };
+    this.subscriptionsTable = this.subscriptionsTable || [];
+    return this.subscriptionsTable.find(s => s.user_id === userId);
+  },
+
+  async upsertSubscription(userId, subData) {
+    if (useDb()) {
+      const dbClient = supabase;
+      if (!dbClient) return null;
+      // Check if exists
+      const existing = await this.getSubscription(userId);
+      if (existing) {
+        const { data, error } = await dbClient.from('subscriptions').update({ ...subData, updated_at: new Date().toISOString() }).eq('user_id', userId).select().single();
+        if (error) console.error('Supabase update subscription error:', error);
+        return !error ? data : null;
+      } else {
+        const { data, error } = await dbClient.from('subscriptions').insert({ user_id: userId, ...subData }).select().single();
+        if (error) console.error('Supabase insert subscription error:', error);
+        return !error ? data : null;
+      }
+    }
+    this.subscriptionsTable = this.subscriptionsTable || [];
+    let sub = this.subscriptionsTable.find(s => s.user_id === userId);
+    if (sub) {
+      Object.assign(sub, subData, { updated_at: new Date().toISOString() });
+    } else {
+      sub = { id: crypto.randomUUID(), user_id: userId, created_at: new Date().toISOString(), ...subData };
+      this.subscriptionsTable.push(sub);
+    }
+    return sub;
+  },
+
+  async logBillingEvent(userId, eventType, payload) {
+    if (useDb()) {
+      const dbClient = supabase;
+      if (dbClient) {
+        await dbClient.from('billing_events').insert({ user_id: userId, event_type: eventType, payload });
+      }
+      return;
+    }
+    this.billingEventsTable = this.billingEventsTable || [];
+    this.billingEventsTable.push({ id: crypto.randomUUID(), user_id: userId, event_type: eventType, payload, created_at: new Date().toISOString() });
+  },
+
+  async getUserPlanAndUsage(userId) {
+    let baseData = { plan_type: 'free', ai_usage_count: 0 };
+    
+    if (useDb()) {
+      const dbClient = supabase;
+      if (dbClient) {
+        const { data } = await dbClient.from('users').select('plan_type, ai_usage_count').eq('id', userId).single();
+        if (data) baseData = data;
+      }
+    } else {
+      const u = usersTable.find(u => u.id === userId);
+      if (u) {
+        baseData.plan_type = u.plan_type || 'free';
+        baseData.ai_usage_count = u.ai_usage_count || 0;
+      }
+    }
+
+    // Now resolve actual plan with subscription
+    const sub = await this.getSubscription(userId);
+    let resolvedPlan = 'free';
+
+    if (sub && (sub.status === 'active' || sub.status === 'trialing')) {
+      resolvedPlan = sub.plan_id;
+    } else if (baseData.plan_type && baseData.plan_type !== 'free') {
+      // For backwards compatibility before subscriptions table existed, fallback to users table
+      // If we strictly enforce subscriptions, we could ignore users.plan_type.
+      // But we will respect users.plan_type if no subscription row exists to avoid breaking existing users.
+      if (!sub) {
+        resolvedPlan = baseData.plan_type;
+      } else {
+        resolvedPlan = 'free'; // Sub exists but is expired/cancelled
+      }
+    }
+
+    return {
+      plan_type: resolvedPlan,
+      ai_usage_count: baseData.ai_usage_count,
+      subscription_status: sub ? sub.status : null
+    };
   }
 };
 
