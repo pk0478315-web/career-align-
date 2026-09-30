@@ -19,10 +19,19 @@ export const SettingsPage = () => {
   const [displayName, setDisplayName] = useState(profile?.displayName || user?.displayName || '');
   const [university, setUniversity] = useState(profile?.university || '');
   const [educationLevel, setEducationLevel] = useState(profile?.educationLevel || 'Undergraduate');
-  const [major, setMajor] = useState(profile?.major || '');
+  const [major, setMajor] = useState(profile?.major || 'Computer Science & Engineering');
   const [graduationYear, setGraduationYear] = useState(profile?.graduationYear || 2026);
-  const [skills, setSkills] = useState((profile?.skills || []).join(', '));
-  const [interests, setInterests] = useState((profile?.interests || []).join(', '));
+  
+  // Selected Skills array
+  const [selectedSkills, setSelectedSkills] = useState(
+    profile?.skills?.length ? profile.skills : ['Python', 'React', 'Git', 'JavaScript']
+  );
+  
+  // Selected Interests array
+  const [selectedInterests, setSelectedInterests] = useState(
+    profile?.interests?.length ? profile.interests : ['Web Development', 'AI & ML Research', 'Open Source Fellowships']
+  );
+
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
 
@@ -30,6 +39,44 @@ export const SettingsPage = () => {
   const [exporting, setExporting] = useState(false);
   const [importJson, setImportJson] = useState('');
   const [importNotice, setImportNotice] = useState('');
+
+  // Options
+  const majorOptions = [
+    'Computer Science & Engineering',
+    'Artificial Intelligence & Data Science',
+    'Information Technology & Software Eng',
+    'Electrical & Electronics Engineering',
+    'Mechanical & Aerospace Engineering',
+    'Bio-Engineering & Medical Technology',
+    'Mathematics & Applied Statistics',
+    'Business & Financial Technology'
+  ];
+
+  const yearOptions = [2025, 2026, 2027, 2028, 2029, 2030];
+
+  const availableSkills = [
+    'Python', 'React', 'JavaScript', 'Node.js', 'C++', 'Java', 
+    'PyTorch', 'SQL', 'Git', 'Machine Learning', 'Docker', 'TypeScript', 
+    'Open Source', 'Data Structures & Algorithms', 'System Design'
+  ];
+
+  const availableInterests = [
+    'Web Development', 'AI & ML Research', 'Open Source Fellowships', 
+    'Hackathons & Competitions', 'Cloud Computing', 'Cybersecurity', 
+    'Data Science', 'Quantum Computing'
+  ];
+
+  const toggleSkill = (skill) => {
+    setSelectedSkills(prev => 
+      prev.includes(skill) ? prev.filter(s => s !== skill) : [...prev, skill]
+    );
+  };
+
+  const toggleInterest = (interest) => {
+    setSelectedInterests(prev => 
+      prev.includes(interest) ? prev.filter(i => i !== interest) : [...prev, interest]
+    );
+  };
 
   const handleSaveProfile = async (e) => {
     e.preventDefault();
@@ -42,8 +89,8 @@ export const SettingsPage = () => {
         educationLevel,
         major,
         graduationYear: Number(graduationYear),
-        skills: skills.split(',').map(s => s.trim()).filter(Boolean),
-        interests: interests.split(',').map(i => i.trim()).filter(Boolean)
+        skills: selectedSkills,
+        interests: selectedInterests
       });
       setMessage('Profile updated successfully!');
     } catch (err) {
@@ -64,7 +111,7 @@ export const SettingsPage = () => {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `student-opportunities-${Date.now()}.csv`;
+        a.download = `career-align-${Date.now()}.csv`;
         a.click();
       } else {
         const res = await api.exportData('json');
@@ -73,7 +120,7 @@ export const SettingsPage = () => {
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = `student-opportunities-backup-${Date.now()}.json`;
+          a.download = `career-align-backup-${Date.now()}.json`;
           a.click();
         }
       }
@@ -115,13 +162,13 @@ export const SettingsPage = () => {
   }
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '28px' }}>
+    <div style={{ maxWidth: '820px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '28px' }}>
       
       <div className="glass-panel" style={{ padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <h1 style={{ fontSize: '26px', fontWeight: '800' }}>Settings & Data Control</h1>
+          <h1 style={{ fontSize: '26px', fontWeight: '800' }}>Settings & Profile Preferences</h1>
           <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-            Manage profile preferences, theme modes, and data backup/export.
+            Manage profile settings, skills selection, theme, and data export.
           </p>
         </div>
 
@@ -168,24 +215,64 @@ export const SettingsPage = () => {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Major</label>
-              <input type="text" className="form-input" value={major} onChange={(e) => setMajor(e.target.value)} />
+              <label className="form-label">Major / Field of Study</label>
+              <select className="form-select" value={major} onChange={(e) => setMajor(e.target.value)}>
+                {majorOptions.map(m => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
             </div>
 
             <div className="form-group">
               <label className="form-label">Graduation Year</label>
-              <input type="number" className="form-input" value={graduationYear} onChange={(e) => setGraduationYear(e.target.value)} />
+              <select className="form-select" value={graduationYear} onChange={(e) => setGraduationYear(e.target.value)}>
+                {yearOptions.map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
             </div>
           </div>
 
+          {/* Technical Skills Selection */}
           <div className="form-group">
-            <label className="form-label">Technical Skills (comma-separated)</label>
-            <input type="text" className="form-input" value={skills} onChange={(e) => setSkills(e.target.value)} />
+            <label className="form-label">Technical Skills (Click to toggle)</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '4px' }}>
+              {availableSkills.map(skill => {
+                const isSelected = selectedSkills.includes(skill);
+                return (
+                  <button
+                    key={skill}
+                    type="button"
+                    onClick={() => toggleSkill(skill)}
+                    className={`btn btn-sm ${isSelected ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{ borderRadius: '9999px', fontSize: '12px' }}
+                  >
+                    {isSelected && <Check size={14} />} {skill}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
+          {/* Interests Selection */}
           <div className="form-group">
-            <label className="form-label">Interests (comma-separated)</label>
-            <input type="text" className="form-input" value={interests} onChange={(e) => setInterests(e.target.value)} />
+            <label className="form-label">Opportunity Interests (Click to toggle)</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '4px' }}>
+              {availableInterests.map(interest => {
+                const isSelected = selectedInterests.includes(interest);
+                return (
+                  <button
+                    key={interest}
+                    type="button"
+                    onClick={() => toggleInterest(interest)}
+                    className={`btn btn-sm ${isSelected ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{ borderRadius: '9999px', fontSize: '12px' }}
+                  >
+                    {isSelected && <Check size={14} />} {interest}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start', marginTop: '8px' }} disabled={saving}>
