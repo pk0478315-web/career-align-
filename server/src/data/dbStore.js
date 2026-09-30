@@ -489,6 +489,103 @@ const dbStore = {
     const record = { id: generateId(), userId: userId || null, opportunityId: opportunityId || null, interactionType, requestData, responseData, createdAt: new Date().toISOString() };
     aiInteractionsTable.push(record);
     return record;
+  },
+
+  // --- CAREER ROADMAP ---
+  async getRoadmap(userId) {
+    if (useDb()) {
+      const dbClient = getClient(userId);
+      const { data, error } = await dbClient.from('career_roadmaps').select('*').eq('user_id', userId).single();
+      if (error || !data) return null;
+      return {
+        id: data.id,
+        userId: data.user_id,
+        targetCareer: data.target_career,
+        currentState: data.current_state,
+        currentSkills: data.current_skills,
+        missingSkills: data.missing_skills,
+        learningPriorities: data.learning_priorities,
+        suggestedProjects: data.suggested_projects,
+        milestones: data.milestones,
+        progress: data.progress,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at
+      };
+    }
+    // Fallback if not using DB (for testing/local)
+    this.roadmapsTable = this.roadmapsTable || [];
+    return this.roadmapsTable.find(r => r.userId === userId) || null;
+  },
+
+  async saveRoadmap(userId, roadmapData) {
+    if (useDb()) {
+      const dbClient = getClient(userId);
+      const newRecord = {
+        user_id: userId,
+        target_career: roadmapData.targetCareer,
+        current_state: roadmapData.currentState,
+        current_skills: roadmapData.currentSkills || [],
+        missing_skills: roadmapData.missingSkills || [],
+        learning_priorities: roadmapData.learningPriorities || [],
+        suggested_projects: roadmapData.suggestedProjects || [],
+        milestones: roadmapData.milestones || [],
+        progress: roadmapData.progress || 0,
+        updated_at: new Date().toISOString()
+      };
+
+      // Upsert
+      const existing = await this.getRoadmap(userId);
+      if (existing) {
+        const { data, error } = await dbClient.from('career_roadmaps')
+          .update(newRecord)
+          .eq('user_id', userId)
+          .select()
+          .single();
+        if (error) throw error;
+        return this.getRoadmap(userId);
+      } else {
+        const { data, error } = await dbClient.from('career_roadmaps')
+          .insert([newRecord])
+          .select()
+          .single();
+        if (error) throw error;
+        return this.getRoadmap(userId);
+      }
+    }
+    
+    this.roadmapsTable = this.roadmapsTable || [];
+    const index = this.roadmapsTable.findIndex(r => r.userId === userId);
+    const newRoadmap = { id: generateId(), userId, ...roadmapData, updatedAt: new Date().toISOString() };
+    if (index >= 0) {
+      this.roadmapsTable[index] = { ...this.roadmapsTable[index], ...newRoadmap };
+    } else {
+      this.roadmapsTable.push(newRoadmap);
+    }
+    return this.roadmapsTable.find(r => r.userId === userId);
+  },
+
+  async updateRoadmapProgress(userId, progressData) {
+    // Allows updating milestones status directly
+    if (useDb()) {
+      const dbClient = getClient(userId);
+      const updates = {
+        milestones: progressData.milestones,
+        progress: progressData.progress,
+        updated_at: new Date().toISOString()
+      };
+      await dbClient.from('career_roadmaps').update(updates).eq('user_id', userId);
+      return this.getRoadmap(userId);
+    }
+    
+    this.roadmapsTable = this.roadmapsTable || [];
+    const index = this.roadmapsTable.findIndex(r => r.userId === userId);
+    if (index >= 0) {
+      this.roadmapsTable[index].milestones = progressData.milestones;
+      this.roadmapsTable[index].progress = progressData.progress;
+      this.roadmapsTable[index].updatedAt = new Date().toISOString();
+      return this.roadmapsTable[index];
+    }
+    return null;
   }
 };
 

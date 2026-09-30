@@ -14,6 +14,7 @@ const opportunityRoutes = require('./routes/opportunityRoutes');
 const trackerRoutes = require('./routes/trackerRoutes');
 const aiRoutes = require('./routes/aiRoutes');
 const exportRoutes = require('./routes/exportRoutes');
+const roadmapRoutes = require('./routes/roadmapRoutes');
 
 const app = express();
 
@@ -56,6 +57,7 @@ app.use('/api/opportunities', opportunityRoutes);
 app.use('/api/my-opportunities', trackerRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api', exportRoutes);
+app.use('/api/roadmap', roadmapRoutes);
 
 // Catch-all route to serve React app index.html for client-side routing
 app.get('*', (req, res, next) => {

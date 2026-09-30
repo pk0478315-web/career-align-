@@ -261,7 +261,37 @@ async function runTests() {
     assert(typeof alignRes.body.data.overallScore === 'number', 'Alignment returns numerical score');
     assert(Boolean(alignRes.body.data.whyItMatches), 'Alignment returns text explanation');
 
-    // 11. Export & Import
+    // 12. Career Roadmap
+    console.log('\n--- 8. Career Roadmap ---');
+    const roadmapGenRes = await request(server, {
+      path: '/api/roadmap/generate',
+      method: 'POST',
+      headers: { Authorization: `Bearer ${authToken}` }
+    });
+    assert(roadmapGenRes.status === 201, 'POST /api/roadmap/generate returns 201 Created');
+    assert(Boolean(roadmapGenRes.body.data.targetCareer), 'Roadmap generates targetCareer');
+    assert(Array.isArray(roadmapGenRes.body.data.milestones), 'Roadmap generates milestones array');
+    
+    const roadmapProgressRes = await request(server, {
+      path: '/api/roadmap/progress',
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${authToken}` }
+    }, {
+      milestones: [{ id: 'm1', title: 'Test', description: 'desc', status: 'completed' }],
+      progress: 33
+    });
+    assert(roadmapProgressRes.status === 200, 'PUT /api/roadmap/progress returns 200 OK');
+    assert(roadmapProgressRes.body.data.progress === 33, 'Roadmap progress is correctly updated');
+
+    const roadmapGetRes = await request(server, {
+      path: '/api/roadmap',
+      method: 'GET',
+      headers: { Authorization: `Bearer ${authToken}` }
+    });
+    assert(roadmapGetRes.status === 200, 'GET /api/roadmap returns 200');
+    assert(roadmapGetRes.body.data.progress === 33, 'GET /api/roadmap retrieves updated progress');
+
+    // 13. Export & Import
     console.log('\n--- 7. Export, Backup & Import ---');
     const exportJsonRes = await request(server, {
       path: '/api/export?format=json',

@@ -11,9 +11,10 @@ import {
   CheckCircle, 
   Clock, 
   Plus, 
-  Link as LinkIcon, 
+  LinkIcon, 
   Compass, 
-  AlertCircle 
+  AlertCircle,
+  Map 
 } from 'lucide-react';
 
 export const DashboardPage = () => {
@@ -23,6 +24,7 @@ export const DashboardPage = () => {
   const [counts, setCounts] = useState({ saved: 0, applied: 0, interview: 0, offered: 0 });
   const [loading, setLoading] = useState(true);
   const [selectedOpp, setSelectedOpp] = useState(null);
+  const [roadmap, setRoadmap] = useState(null);
   
   // Quick URL capture state
   const [captureUrlInput, setCaptureUrlInput] = useState('');
@@ -42,6 +44,12 @@ export const DashboardPage = () => {
         if (trackRes.success) {
           setTrackedItems(trackRes.data.items);
           setCounts(trackRes.data.counts);
+        }
+
+        // 3. Fetch roadmap
+        const roadmapRes = await api.getRoadmap();
+        if (roadmapRes.success) {
+          setRoadmap(roadmapRes.data);
         }
       }
     } catch (err) {
@@ -184,6 +192,35 @@ export const DashboardPage = () => {
           </div>
         </div>
 
+      </div>
+
+      {/* Career Roadmap Widget */}
+      <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <h2 style={{ fontSize: '18px', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+              <Map size={20} color="var(--accent-primary)" /> AI Career Roadmap
+            </h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '4px', margin: 0 }}>
+              {roadmap ? `Target: ${roadmap.targetCareer}` : 'Create your personalized career roadmap.'}
+            </p>
+          </div>
+          <Link to="/roadmap" className="btn btn-primary btn-sm">
+            {roadmap ? 'View Roadmap' : 'Generate Roadmap'}
+          </Link>
+        </div>
+
+        {roadmap && (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px', fontWeight: '600' }}>
+              <span>Progress</span>
+              <span style={{ color: 'var(--accent-primary)' }}>{roadmap.progress}%</span>
+            </div>
+            <div style={{ height: '8px', background: 'var(--bg-tertiary)', borderRadius: '10px', overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${roadmap.progress}%`, background: 'var(--accent-primary)', transition: 'width 0.3s' }}></div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Recommended Opportunities Section */}

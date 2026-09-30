@@ -13,7 +13,8 @@ import {
   Menu,
   X,
   ChevronRight,
-  LayoutDashboard
+  LayoutDashboard,
+  Map
 } from 'lucide-react';
 
 export const Sidebar = () => {
@@ -45,6 +46,7 @@ export const Sidebar = () => {
     { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/discover', label: 'Discover Opportunities', icon: Compass },
     { path: '/tracker', label: 'My Tracker', icon: BookmarkCheck },
+    { path: '/roadmap', label: 'Career Roadmap', icon: Map },
     { path: '/ai-copilot', label: 'AI Assistant', icon: Bot },
     { path: '/settings', label: 'Settings', icon: Settings }
   ];

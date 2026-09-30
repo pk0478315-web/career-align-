@@ -69,6 +69,11 @@ export const api = {
   copilotChat: (payload) => apiClient.post('/ai/chat', payload),
   alignCareer: (opportunityId) => apiClient.post('/ai/align', { opportunityId }),
 
+  // Career Roadmap
+  getRoadmap: () => apiClient.get('/roadmap'),
+  generateRoadmap: () => apiClient.post('/roadmap/generate'),
+  updateRoadmapProgress: (payload) => apiClient.put('/roadmap/progress', payload),
+
   // Export & Import
   exportData: (format = 'json', scope = 'my-opportunities') => 
     apiClient.get(`/export?format=${format}&scope=${scope}`),
