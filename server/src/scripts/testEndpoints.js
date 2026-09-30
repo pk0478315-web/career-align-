@@ -194,7 +194,7 @@ async function runTests() {
     assert(listTrackerRes.status === 200, 'GET /api/my-opportunities returns 200');
     assert(listTrackerRes.body.data.counts.saved >= 1, 'Tracker computes category counts correctly');
 
-    // Update status to 'applied'
+    // Update status to 'applied' with workspace data
     const patchRes = await request(server, {
       path: `/api/my-opportunities/${trackedRecordId}`,
       method: 'PATCH',
@@ -202,10 +202,25 @@ async function runTests() {
     }, {
       status: 'applied',
       appliedDate: new Date().toISOString(),
-      notes: 'Applied with revised resume'
+      notes: 'Applied with revised resume',
+      checklist: [{ id: 'test-chk', item: 'Submitted', completed: true }],
+      reminders: [{ id: 'test-rem', text: 'Follow up', date: new Date().toISOString() }],
+      activityHistory: [{ date: new Date().toISOString(), action: 'Applied' }]
     });
     assert(patchRes.status === 200, 'PATCH /api/my-opportunities/:id updates status to applied');
     assert(patchRes.body.data.status === 'applied', 'Status transition persisted');
+    assert(patchRes.body.data.activityHistory.length === 1, 'Activity history persisted');
+    assert(patchRes.body.data.checklist.length === 1, 'Checklist persisted');
+
+    // Update status to 'interview'
+    const patchInterviewRes = await request(server, {
+      path: `/api/my-opportunities/${trackedRecordId}`,
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${authToken}` }
+    }, {
+      status: 'interview'
+    });
+    assert(patchInterviewRes.body.data.status === 'interview', 'Status transition to interview persisted');
 
     // 10. AI Copilot Endpoints
     console.log('\n--- 6. AI Grounded Copilot ---');

@@ -373,6 +373,7 @@ const dbStore = {
       const items = (data || []).map(r => ({
         id: r.id, userId: r.user_id, opportunityId: r.opportunity_id, status: r.status,
         notes: r.notes, checklist: r.checklist, reminders: r.reminders, appliedDate: r.applied_date,
+        resumeId: r.resume_id, aiPreparation: r.ai_preparation, interviewPreparation: r.interview_preparation, activityHistory: r.activity_history,
         createdAt: r.created_at, updatedAt: r.updated_at,
         opportunity: r.opportunities ? mapOppFromDb(r.opportunities) : null
       }));
@@ -453,12 +454,16 @@ const dbStore = {
       if (updates.checklist !== undefined) dbUpdates.checklist = updates.checklist;
       if (updates.reminders !== undefined) dbUpdates.reminders = updates.reminders;
       if (updates.appliedDate !== undefined) dbUpdates.applied_date = updates.appliedDate;
+      if (updates.resumeId !== undefined) dbUpdates.resume_id = updates.resumeId;
+      if (updates.aiPreparation !== undefined) dbUpdates.ai_preparation = updates.aiPreparation;
+      if (updates.interviewPreparation !== undefined) dbUpdates.interview_preparation = updates.interviewPreparation;
+      if (updates.activityHistory !== undefined) dbUpdates.activity_history = updates.activityHistory;
       dbUpdates.updated_at = new Date().toISOString();
 
       const { data, error } = await dbClient.from('user_opportunities').update(dbUpdates).eq('id', id).eq('user_id', userId).select().single();
       if (error || !data) return null;
       const opp = await this.getOpportunityById(data.opportunity_id);
-      return { id: data.id, userId: data.user_id, opportunityId: data.opportunity_id, status: data.status, notes: data.notes, checklist: data.checklist, reminders: data.reminders, appliedDate: data.applied_date, createdAt: data.created_at, updatedAt: data.updated_at, opportunity: opp };
+      return { id: data.id, userId: data.user_id, opportunityId: data.opportunity_id, status: data.status, notes: data.notes, checklist: data.checklist, reminders: data.reminders, appliedDate: data.applied_date, resumeId: data.resume_id, aiPreparation: data.ai_preparation, interviewPreparation: data.interview_preparation, activityHistory: data.activity_history, createdAt: data.created_at, updatedAt: data.updated_at, opportunity: opp };
     }
     const index = userOpportunitiesTable.findIndex(r => r.id === id && r.userId === userId);
     if (index === -1) return null;

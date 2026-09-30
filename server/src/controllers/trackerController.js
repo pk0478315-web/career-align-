@@ -75,6 +75,10 @@ const updateTrackedOpportunity = async (req, res, next) => {
     if (checklist !== undefined) updates.checklist = checklist;
     if (reminders !== undefined) updates.reminders = reminders;
     if (appliedDate !== undefined) updates.appliedDate = appliedDate;
+    if (req.body.resumeId !== undefined) updates.resumeId = req.body.resumeId;
+    if (req.body.aiPreparation !== undefined) updates.aiPreparation = req.body.aiPreparation;
+    if (req.body.interviewPreparation !== undefined) updates.interviewPreparation = req.body.interviewPreparation;
+    if (req.body.activityHistory !== undefined) updates.activityHistory = req.body.activityHistory;
 
     const updated = await dbStore.updateUserOpportunity(userId, id, updates);
     if (!updated) {
