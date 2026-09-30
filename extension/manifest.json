@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "Student Opportunity AI — Capture & Autofill",
+  "version": "1.0.0",
+  "description": "Capture opportunities from any website with AI eligibility checks and 1-click application autofill.",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting"
+  ],
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "background/background.js"
+  },
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "Student Opportunity AI"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

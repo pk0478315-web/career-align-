@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Student Opportunity AI Extension</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --primary: #6366f1;
+      --accent: #14b8a6;
+      --border: #334155;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      width: 360px;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 16px;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .brand { font-size: 15px; font-weight: 800; color: #ffffff; }
+    .brand span { color: var(--primary); }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+    .btn {
+      width: 100%;
+      padding: 9px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: opacity 0.2s;
+    }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-secondary { background: var(--border); color: var(--text); }
+    .btn-accent { background: var(--accent); color: #0f172a; }
+    .btn:hover { opacity: 0.9; }
+    .form-group { margin-bottom: 10px; }
+    .label { font-size: 11px; font-weight: 600; color: var(--muted); margin-bottom: 4px; display: block; }
+    .input {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 12px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-size: 10px;
+      font-weight: 700;
+      background: rgba(99, 102, 241, 0.2);
+      color: var(--primary);
+      margin-bottom: 8px;
+    }
+    .notice { font-size: 11px; color: var(--accent); margin-top: 6px; text-align: center; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="brand">✨ Student Opps <span>AI</span></div>
+    <span style="font-size:10px;color:var(--muted);font-weight:600;">EXT V1.0</span>
+  </div>
+
+  {/* Active State View */}
+  <div id="capture-section" class="card">
+    <span class="badge" id="category-badge">CURRENT TAB</span>
+    <h3 id="tab-title" style="font-size:14px;font-weight:700;margin-bottom:4px;">Detecting webpage...</h3>
+    <p id="tab-org" style="font-size:11px;color:var(--muted);margin-bottom:12px;">Extracting domain metadata...</p>
+
+    <button id="btn-capture" class="btn btn-primary" style="margin-bottom:8px;">
+      ✨ Capture Opportunity from Tab
+    </button>
+
+    <button id="btn-autofill" class="btn btn-accent">
+      ⚡ Autofill Application Form
+    </button>
+  </div>
+
+  {/* Extracted Review Draft Modal/View */}
+  <div id="review-section" class="card" style="display:none;">
+    <h4 style="font-size:13px;margin-bottom:10px;color:var(--accent);">Review Captured Opportunity Draft</h4>
+    
+    <div class="form-group">
+      <label class="label">TITLE</label>
+      <input type="text" id="draft-title" class="input" />
+    </div>
+
+    <div class="form-group">
+      <label class="label">ORGANIZATION</label>
+      <input type="text" id="draft-org" class="input" />
+    </div>
+
+    <div class="form-group">
+      <label class="label">DEADLINE</label>
+      <input type="date" id="draft-deadline" class="input" />
+    </div>
+
+    <button id="btn-save-draft" class="btn btn-primary">
+      💾 Save to My Tracker
+    </button>
+  </div>
+
+  <div id="status-notice" class="notice"></div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
