@@ -45,7 +45,20 @@ const optionalAuth = async (req, res, next) => {
   next();
 };
 
+const requireAdmin = async (req, res, next) => {
+  // First, apply standard auth
+  await requireAuth(req, res, (err) => {
+    if (err) return next(err);
+    // After auth, check role
+    if (!req.user || req.user.role !== 'admin') {
+      return sendError(res, 'Admin privileges required', 403, 'FORBIDDEN');
+    }
+    next();
+  });
+};
+
 module.exports = {
   requireAuth,
-  optionalAuth
+  optionalAuth,
+  requireAdmin
 };

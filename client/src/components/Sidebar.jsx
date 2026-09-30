@@ -14,7 +14,8 @@ import {
   X,
   ChevronRight,
   LayoutDashboard,
-  Map
+  Map,
+  ShieldAlert
 } from 'lucide-react';
 
 export const Sidebar = () => {
@@ -50,6 +51,10 @@ export const Sidebar = () => {
     { path: '/ai-copilot', label: 'AI Assistant', icon: Bot },
     { path: '/settings', label: 'Settings', icon: Settings }
   ];
+
+  if (user?.role === 'admin') {
+    navItems.push({ path: '/admin', label: 'Admin Control Panel', icon: ShieldAlert });
+  }
 
   return (
     <>

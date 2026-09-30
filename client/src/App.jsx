@@ -16,6 +16,7 @@ import { MyOpportunitiesPage } from './pages/MyOpportunitiesPage';
 import { AiAssistantPage } from './pages/AiAssistantPage';
 import { SettingsPage } from './pages/SettingsPage';
 import RoadmapPage from './pages/RoadmapPage';
+import { AdminDashboard } from './pages/AdminDashboard';
 
 // Protected Route Guard
 const ProtectedRoute = ({ children }) => {
@@ -45,6 +46,7 @@ function AppContent() {
               <Route path="/ai-copilot" element={<AiAssistantPage />} />
               <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
               <Route path="/roadmap" element={<ProtectedRoute><RoadmapPage /></ProtectedRoute>} />
+              <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
           </main>

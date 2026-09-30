@@ -95,5 +95,14 @@ export const api = {
   markNotificationRead: (id) => apiClient.patch(`/notifications/${id}/read`),
   markAllNotificationsRead: () => apiClient.patch('/notifications/read-all'),
   getNotificationPreferences: () => apiClient.get('/notifications/preferences'),
-  updateNotificationPreferences: (payload) => apiClient.put('/notifications/preferences', payload)
+  updateNotificationPreferences: (payload) => apiClient.put('/notifications/preferences', payload),
+
+  // Admin
+  getAdminStats: () => apiClient.get('/admin/stats'),
+  getAdminUsers: () => apiClient.get('/admin/users'),
+  updateUserRole: (id, payload) => apiClient.patch(`/admin/users/${id}`, payload),
+  deleteUser: (id) => apiClient.delete(`/admin/users/${id}`),
+  getReportedOpportunities: () => apiClient.get('/admin/opportunities/reported'),
+  updateOpportunityAdmin: (id, payload) => apiClient.patch(`/admin/opportunities/${id}`, payload),
+  deleteOpportunityAdmin: (id) => apiClient.delete(`/admin/opportunities/${id}`)
 };

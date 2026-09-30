@@ -436,8 +436,43 @@ async function runTests() {
       assert(readAllRes.status === 200, 'PATCH /api/notifications/read-all succeeds');
     }
 
-    // 14. Export & Import
-    console.log('\n--- 11. Export, Backup & Import ---');
+    // 11. Admin & Security
+    console.log('\n--- 11. Admin & Security ---');
+    
+    // Test normal user denied
+    const deniedAdminRes = await request(server, {
+      path: '/api/admin/stats',
+      method: 'GET',
+      headers: { Authorization: `Bearer ${authToken}` }
+    });
+    assert(deniedAdminRes.status === 403, 'GET /api/admin/stats returns 403 for normal user');
+
+    // Promote the test user to admin for testing
+    const dbStore = require('../data/dbStore');
+    await dbStore.adminUpdateUserRole(loginRes.body.data.user.id, 'admin');
+
+    // Refresh token / bypass auth check might be needed? Actually requireAuth checks dbStore.findUserById(decoded.id)
+    // which queries the DB directly, so the updated role is picked up immediately!
+
+    // Test admin access successful
+    const adminStatsRes = await request(server, {
+      path: '/api/admin/stats',
+      method: 'GET',
+      headers: { Authorization: `Bearer ${authToken}` }
+    });
+    assert(adminStatsRes.status === 200, 'GET /api/admin/stats returns 200 for admin user');
+    assert(adminStatsRes.body.data.stats.totalUsers > 0, 'Admin gets system stats');
+
+    const adminUsersRes = await request(server, {
+      path: '/api/admin/users',
+      method: 'GET',
+      headers: { Authorization: `Bearer ${authToken}` }
+    });
+    assert(adminUsersRes.status === 200, 'GET /api/admin/users returns 200');
+    assert(Array.isArray(adminUsersRes.body.data.users), 'Admin gets user list');
+
+    // 12. Export & Import
+    console.log('\n--- 12. Export, Backup & Import ---');
     const exportJsonRes = await request(server, {
       path: '/api/export?format=json',
       method: 'GET',

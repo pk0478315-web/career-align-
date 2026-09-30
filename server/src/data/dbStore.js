@@ -807,6 +807,21 @@ const dbStore = {
       if (n.userId === userId) n.isRead = true;
     });
     return true;
+  },
+
+  async adminUpdateUserRole(userId, role) {
+    if (useDb()) {
+      const dbClient = supabase;
+      if (!dbClient) return null;
+      const { data, error } = await dbClient.from('users').update({ role }).eq('id', userId).select().single();
+      return !error && data ? data : null;
+    }
+    const user = usersTable.find(u => u.id === userId);
+    if (user) {
+      user.role = role;
+      return user;
+    }
+    return null;
   }
 };
 
