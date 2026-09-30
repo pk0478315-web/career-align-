@@ -1,6 +1,5 @@
 /**
  * Popup Script for Student Opportunity AI Browser Extension
- * Extractor & Saver Engine
  */
 
 const API_BASE = 'https://career-align-six.vercel.app/api';
@@ -13,9 +12,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   const btnSaveDraft = document.getElementById('btn-save-draft');
   const reviewSection = document.getElementById('review-section');
   const statusNotice = document.getElementById('status-notice');
+  const savedList = document.getElementById('saved-list');
+  const savedCount = document.getElementById('saved-count');
 
   let currentTabUrl = '';
   let activeTab = null;
+
+  // Load and render recent saved items from extension storage
+  renderSavedList();
 
   // Get active tab details
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -25,9 +29,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     tabTitle.innerText = tab.title || 'Current Webpage';
     try {
       const urlObj = new URL(tab.url);
-      tabOrg.innerText = urlObj.hostname.replace('www.', '');
+      tabOrg.innerText = urlObj.hostname.replace('www.', '').toUpperCase();
     } catch {
-      tabOrg.innerText = 'Webpage';
+      tabOrg.innerText = 'WEBPAGE';
     }
   }
 
@@ -42,7 +46,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (chrome.runtime.lastError || !response || !response.metadata) {
           extractedData = {
             title: activeTab.title || 'Opportunity Title',
-            organization: tabOrg.innerText.toUpperCase(),
+            organization: tabOrg.innerText,
             description: `Captured from ${currentTabUrl}`,
             url: currentTabUrl
           };
@@ -70,9 +74,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
-    statusNotice.innerText = 'Saving to database & extension storage...';
+    statusNotice.innerText = 'Saving opportunity...';
 
     const oppRecord = {
+      id: `ext-${Date.now()}`,
       title,
       organization: organization || 'Web Capture',
       category: 'other',
@@ -80,14 +85,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       sourceUrl: currentTabUrl,
       applicationUrl: currentTabUrl,
       deadline: deadline ? new Date(deadline).toISOString() : null,
-      isRemote: true
+      isRemote: true,
+      savedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
     // Save locally in Chrome Extension storage
     chrome.storage.local.get(['savedOpportunities'], async (data) => {
       const existing = data.savedOpportunities || [];
-      existing.unshift({ ...oppRecord, savedAt: new Date().toISOString() });
-      chrome.storage.local.set({ savedOpportunities: existing });
+      existing.unshift(oppRecord);
+      chrome.storage.local.set({ savedOpportunities: existing }, () => {
+        renderSavedList();
+      });
 
       // Post to live backend API database
       try {
@@ -98,12 +106,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         const res = await response.json();
         if (res.success) {
-          statusNotice.innerText = '🎉 Saved to live server database & extension tracker!';
+          statusNotice.innerText = '🎉 Saved to server database & extension tracker!';
         } else {
-          statusNotice.innerText = '✅ Saved to extension local tracker!';
+          statusNotice.innerText = '✅ Saved to extension tracker!';
         }
       } catch (err) {
-        statusNotice.innerText = '✅ Saved to extension local tracker!';
+        statusNotice.innerText = '✅ Saved to extension tracker!';
       }
     });
   });
@@ -119,6 +127,28 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
   });
+
+  function renderSavedList() {
+    chrome.storage.local.get(['savedOpportunities'], (data) => {
+      const items = data.savedOpportunities || [];
+      savedCount.innerText = `(${items.length})`;
+
+      if (items.length === 0) {
+        savedList.innerHTML = '<p style="font-size:11px;color:var(--muted);font-style:italic;">No items captured yet.</p>';
+        return;
+      }
+
+      savedList.innerHTML = items.slice(0, 4).map(item => `
+        <div class="saved-item">
+          <div style="font-weight:700;color:#f8fafc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.title}</div>
+          <div style="color:var(--muted);display:flex;justify-content:space-between;margin-top:2px;">
+            <span>${item.organization}</span>
+            <span>${item.savedAt || ''}</span>
+          </div>
+        </div>
+      `).join('');
+    });
+  }
 
   function getSampleProfile() {
     return {

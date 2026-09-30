@@ -40,7 +40,6 @@ const listOpportunities = async (req, res, next) => {
     const { search, category, remote, sort } = req.query;
     const opportunities = await dbStore.getOpportunities({ search, category, remote, sort });
 
-    // If user is authenticated, compute personalized match explanations
     let studentProfile = null;
     if (req.user) {
       studentProfile = await dbStore.getProfile(req.user.id);
@@ -101,25 +100,34 @@ const createOpportunity = async (req, res, next) => {
       fundingCompensation
     } = req.body;
 
-    if (!title || !organization || !category) {
-      return sendError(res, 'Title, organization, and category are required', 400, 'VALIDATION_ERROR');
+    if (!title || !organization) {
+      return sendError(res, 'Title and organization are required', 400, 'VALIDATION_ERROR');
     }
 
     const newOpp = await dbStore.createOpportunity({
       title,
       organization,
-      category,
-      description,
-      sourceUrl,
-      applicationUrl,
-      deadline,
-      location,
-      isRemote,
-      requirements,
-      skillsRequired,
-      fundingCompensation,
-      sourceType: 'manual'
+      category: category || 'other',
+      description: description || `Captured from ${sourceUrl || 'extension'}`,
+      sourceUrl: sourceUrl || '',
+      applicationUrl: applicationUrl || sourceUrl || '',
+      deadline: deadline || null,
+      location: location || (isRemote ? 'Remote' : 'Location Not Specified'),
+      isRemote: isRemote !== undefined ? Boolean(isRemote) : true,
+      requirements: Array.isArray(requirements) ? requirements : [],
+      skillsRequired: Array.isArray(skillsRequired) ? skillsRequired : [],
+      fundingCompensation: fundingCompensation || 'Not specified',
+      sourceType: 'captured'
     });
+
+    // If student is authenticated, automatically track in "My Opportunities" pipeline!
+    if (req.user) {
+      await dbStore.trackOpportunity(req.user.id, {
+        opportunityId: newOpp.id,
+        status: 'saved',
+        notes: `Captured via Chrome Extension on ${new Date().toLocaleDateString()}`
+      });
+    }
 
     return sendSuccess(res, newOpp, 201);
   } catch (err) {

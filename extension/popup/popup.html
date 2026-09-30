@@ -78,6 +78,14 @@
       margin-bottom: 8px;
     }
     .notice { font-size: 11px; color: var(--accent); margin-top: 6px; text-align: center; }
+    .saved-item {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 10px;
+      margin-top: 6px;
+      font-size: 11px;
+    }
   </style>
 </head>
 <body>
@@ -87,14 +95,14 @@
     <span style="font-size:10px;color:var(--muted);font-weight:600;">EXT V1.0</span>
   </div>
 
-  {/* Active State View */}
+  {/* Active Tab Section */}
   <div id="capture-section" class="card">
     <span class="badge" id="category-badge">CURRENT TAB</span>
-    <h3 id="tab-title" style="font-size:14px;font-weight:700;margin-bottom:4px;">Detecting webpage...</h3>
+    <h3 id="tab-title" style="font-size:14px;font-weight:700;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Detecting webpage...</h3>
     <p id="tab-org" style="font-size:11px;color:var(--muted);margin-bottom:12px;">Extracting domain metadata...</p>
 
     <button id="btn-capture" class="btn btn-primary" style="margin-bottom:8px;">
-      ✨ Capture Opportunity from Tab
+      ✨ Extract Opportunity Details
     </button>
 
     <button id="btn-autofill" class="btn btn-accent">
@@ -102,9 +110,9 @@
     </button>
   </div>
 
-  {/* Extracted Review Draft Modal/View */}
+  {/* Review Draft Section */}
   <div id="review-section" class="card" style="display:none;">
-    <h4 style="font-size:13px;margin-bottom:10px;color:var(--accent);">Review Captured Opportunity Draft</h4>
+    <h4 style="font-size:13px;margin-bottom:10px;color:var(--accent);">Review Captured Details</h4>
     
     <div class="form-group">
       <label class="label">TITLE</label>
@@ -122,8 +130,19 @@
     </div>
 
     <button id="btn-save-draft" class="btn btn-primary">
-      💾 Save to My Tracker
+      💾 Confirm & Save Opportunity
     </button>
+  </div>
+
+  {/* Saved Items List */}
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+      <span style="font-size:12px;font-weight:700;color:var(--text);">Recent Captured Items</span>
+      <span id="saved-count" style="font-size:10px;color:var(--muted);">(0)</span>
+    </div>
+    <div id="saved-list" style="max-height:120px;overflow-y:auto;">
+      <p style="font-size:11px;color:var(--muted);font-style:italic;">No items captured yet.</p>
+    </div>
   </div>
 
   <div id="status-notice" class="notice"></div>
