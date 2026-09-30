@@ -42,7 +42,7 @@ app.get('/api/health', (req, res) => {
   return sendSuccess(res, {
     status: 'healthy',
     timestamp: new Date().toISOString(),
-    service: 'Student Opportunity AI Full-Stack Platform',
+    service: 'CareerAlign Full-Stack Platform',
     version: '1.0.0',
     storageMode: env.SUPABASE_URL ? 'supabase-connected' : 'local-resilient-mode',
     aiStatus: env.GEMINI_API_KEY ? 'gemini-enabled' : 'grounded-heuristic-mode'

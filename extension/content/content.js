@@ -2,7 +2,7 @@
  * Content Script for DOM extraction & Application Autofill Floating Panel
  */
 
-console.log('[Student Opportunity AI] Content script loaded on page:', window.location.href);
+console.log('[CareerAlign] Content script loaded on page:', window.location.href);
 
 // Listen for extraction or autofill triggers from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -140,9 +140,9 @@ function injectFloatingBar() {
 
   bar.innerHTML = `
     <div style="display:flex;align-items:center;gap:6px;font-weight:700;">
-      <span style="color:#818cf8;">✨ Student Opps AI</span>
+      <span style="color:#38bdf8;">✨ CareerAlign</span>
     </div>
-    <button id="opp-ai-autofill-btn" style="background:#4f46e5;color:#fff;border:none;padding:6px 12px;border-radius:6px;font-weight:600;cursor:pointer;font-size:12px;">
+    <button id="opp-ai-autofill-btn" style="background:#0284c7;color:#fff;border:none;padding:6px 12px;border-radius:6px;font-weight:600;cursor:pointer;font-size:12px;">
       ⚡ Autofill Application
     </button>
     <button id="opp-ai-close-btn" style="background:transparent;color:#94a3b8;border:none;cursor:pointer;font-size:14px;padding:0 4px;">✕</button>

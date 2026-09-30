@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Student Opportunity AI Extension</title>
+  <title>CareerAlign Browser Extension</title>
   <style>
     :root {
       --bg: #0f172a;
       --card: #1e293b;
       --text: #f8fafc;
       --muted: #94a3b8;
-      --primary: #6366f1;
+      --primary: #0284c7;
       --accent: #14b8a6;
       --border: #334155;
     }
@@ -29,7 +29,7 @@
       padding-bottom: 10px;
       border-bottom: 1px solid var(--border);
     }
-    .brand { font-size: 15px; font-weight: 800; color: #ffffff; }
+    .brand { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 800; color: #ffffff; }
     .brand span { color: var(--primary); }
     .card {
       background: var(--card);
@@ -73,7 +73,7 @@
       border-radius: 9999px;
       font-size: 10px;
       font-weight: 700;
-      background: rgba(99, 102, 241, 0.2);
+      background: rgba(2, 132, 199, 0.2);
       color: var(--primary);
       margin-bottom: 8px;
     }
@@ -91,7 +91,10 @@
 <body>
 
   <div class="header">
-    <div class="brand">✨ Student Opps <span>AI</span></div>
+    <div class="brand">
+      <img src="logo.png" style="height:24px;width:auto;" />
+      Career<span>Align</span>
+    </div>
     <span style="font-size:10px;color:var(--muted);font-weight:600;">EXT V1.0</span>
   </div>
 

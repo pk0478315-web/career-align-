@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
-  Sparkles, 
   Compass, 
   BookmarkCheck, 
   Bot, 
@@ -25,18 +24,20 @@ export const Navbar = () => {
 
   return (
     <header className="glass-panel" style={{ borderRadius: 0, borderTop: 0, borderLeft: 0, borderRight: 0, position: 'sticky', top: 0, zIndex: 50 }}>
-      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '10px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         
-        {/* Brand Logo */}
-        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
-          <div style={{ background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))', padding: '8px', borderRadius: '10px', display: 'flex' }}>
-            <Sparkles size={20} color="#ffffff" />
-          </div>
+        {/* Brand Logo & Name */}
+        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '12px', textDecoration: 'none' }}>
+          <img 
+            src="/logo.png" 
+            alt="CareerAlign Logo" 
+            style={{ height: '42px', width: 'auto', objectFit: 'contain' }} 
+          />
           <div>
-            <span style={{ fontFamily: 'var(--font-heading)', fontSize: '18px', fontWeight: '800', color: 'var(--text-primary)', display: 'block', lineHeight: 1 }}>
-              Student Opps <span style={{ color: 'var(--accent-primary)' }}>AI</span>
+            <span style={{ fontFamily: 'var(--font-heading)', fontSize: '20px', fontWeight: '800', color: 'var(--text-primary)', display: 'block', lineHeight: 1, letterSpacing: '-0.02em' }}>
+              Career<span style={{ color: '#0284c7' }}>Align</span>
             </span>
-            <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '600', letterSpacing: '0.05em' }}>FULL-STACK PLATFORM</span>
+            <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '700', letterSpacing: '0.06em' }}>OPPORTUNITY INTELLIGENCE</span>
           </div>
         </Link>
 
@@ -49,7 +50,7 @@ export const Navbar = () => {
             <Compass size={16} /> Discover
           </Link>
           <Link to="/tracker" className={`btn btn-sm ${isActive('/tracker') ? 'btn-primary' : 'btn-secondary'}`} style={{ border: 'none', background: isActive('/tracker') ? undefined : 'transparent' }}>
-            <BookmarkCheck size={16} /> My Opportunities
+            <BookmarkCheck size={16} /> My Tracker
           </Link>
           <Link to="/ai-copilot" className={`btn btn-sm ${isActive('/ai-copilot') ? 'btn-primary' : 'btn-secondary'}`} style={{ border: 'none', background: isActive('/ai-copilot') ? undefined : 'transparent' }}>
             <Bot size={16} /> AI Assistant

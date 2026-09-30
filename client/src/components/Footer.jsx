@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Sparkles, ShieldCheck, FileSpreadsheet } from 'lucide-react';
+import { ShieldCheck, FileSpreadsheet } from 'lucide-react';
 
 export const Footer = () => {
   return (
@@ -8,14 +8,14 @@ export const Footer = () => {
       <div style={{ maxWidth: '1280px', margin: '0 auto', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: '24px' }}>
         
         <div style={{ maxWidth: '360px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-            <Sparkles size={20} color="var(--accent-primary)" />
-            <span style={{ fontFamily: 'var(--font-heading)', fontWeight: '800', fontSize: '18px' }}>
-              Student Opportunity AI
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+            <img src="/logo.png" alt="CareerAlign Logo" style={{ height: '36px', width: 'auto' }} />
+            <span style={{ fontFamily: 'var(--font-heading)', fontWeight: '800', fontSize: '20px', color: 'var(--text-primary)' }}>
+              Career<span style={{ color: '#0284c7' }}>Align</span>
             </span>
           </div>
           <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.6' }}>
-            Empowering university students to discover personalized scholarships, internships, research fellowships, and hackathons with grounded AI eligibility analysis.
+            CareerAlign empowers university students to discover personalized scholarships, internships, research fellowships, and hackathons with grounded AI eligibility analysis.
           </p>
         </div>
 
@@ -59,7 +59,7 @@ export const Footer = () => {
       </div>
 
       <div style={{ maxWidth: '1280px', margin: '24px auto 0 auto', paddingTop: '16px', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: 'var(--text-muted)' }}>
-        <span>© 2026 Student Opportunity AI. All rights reserved.</span>
+        <span>© 2026 CareerAlign. All rights reserved.</span>
         <span>Built by Aayush, Piyush, Shree, Anushka & Rahul</span>
       </div>
     </footer>
