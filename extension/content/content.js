@@ -151,16 +151,43 @@ function injectFloatingBar() {
   document.body.appendChild(bar);
 
   document.getElementById('opp-ai-close-btn').onclick = () => bar.remove();
-  document.getElementById('opp-ai-autofill-btn').onclick = () => {
-    const profile = {
-      displayName: 'Alex Chen',
-      email: 'alex@university.edu',
-      university: 'State University',
-      major: 'Computer Science',
-      graduationYear: 2026,
-      skills: ['Python', 'React', 'Node.js', 'Git']
-    };
-    const result = performAutofill(profile);
-    alert(result.message);
+  document.getElementById('opp-ai-autofill-btn').onclick = async () => {
+    try {
+      const { authToken } = await chrome.storage.local.get(['authToken']);
+      if (!authToken) {
+        alert('Please login via the Career Align extension popup first.');
+        return;
+      }
+      
+      const btn = document.getElementById('opp-ai-autofill-btn');
+      const originalText = btn.innerText;
+      btn.innerText = 'Fetching...';
+
+      // We use localhost for dev testing
+      const API_BASE = 'http://localhost:5000/api';
+      const res = await fetch(`${API_BASE}/profile`, {
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      });
+      const data = await res.json();
+      btn.innerText = originalText;
+
+      let profileData = {};
+      if (data.success && data.data) {
+        profileData = {
+          displayName: data.data.name || data.data.user?.name || '',
+          email: data.data.user?.email || '',
+          university: data.data.university || '',
+          major: data.data.major || '',
+          graduationYear: data.data.graduationYear || '',
+          skills: data.data.skills || [],
+          location: data.data.location || ''
+        };
+      }
+      
+      const result = performAutofill(profileData);
+      alert(result.message);
+    } catch (err) {
+      alert('Failed to autofill: ' + err.message);
+    }
   };
 }

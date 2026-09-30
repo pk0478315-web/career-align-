@@ -98,14 +98,31 @@
     <span style="font-size:10px;color:var(--muted);font-weight:600;">EXT V1.0</span>
   </div>
 
+  {/* Auth Section */}
+  <div id="auth-section" class="card">
+    <h3 style="font-size:14px;font-weight:700;margin-bottom:8px;">Sign In to CareerAlign</h3>
+    <div class="form-group">
+      <label class="label">EMAIL</label>
+      <input type="email" id="auth-email" class="input" placeholder="student@university.edu" />
+    </div>
+    <div class="form-group">
+      <label class="label">PASSWORD</label>
+      <input type="password" id="auth-password" class="input" placeholder="********" />
+    </div>
+    <button id="btn-login" class="btn btn-primary">Sign In</button>
+  </div>
+
   {/* Active Tab Section */}
-  <div id="capture-section" class="card">
-    <span class="badge" id="category-badge">CURRENT TAB</span>
+  <div id="capture-section" class="card" style="display:none;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <span class="badge" id="category-badge">CURRENT TAB</span>
+      <button id="btn-logout" style="background:none; border:none; color:var(--muted); font-size:10px; cursor:pointer; text-decoration:underline;">Logout</button>
+    </div>
     <h3 id="tab-title" style="font-size:14px;font-weight:700;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Detecting webpage...</h3>
     <p id="tab-org" style="font-size:11px;color:var(--muted);margin-bottom:12px;">Extracting domain metadata...</p>
 
     <button id="btn-capture" class="btn btn-primary" style="margin-bottom:8px;">
-      ✨ Extract Opportunity Details
+      ✨ Extract & Analyze Details
     </button>
 
     <button id="btn-autofill" class="btn btn-accent">
@@ -115,8 +132,13 @@
 
   {/* Review Draft Section */}
   <div id="review-section" class="card" style="display:none;">
-    <h4 style="font-size:13px;margin-bottom:10px;color:var(--accent);">Review Captured Details</h4>
+    <h4 style="font-size:13px;margin-bottom:10px;color:var(--accent);">Review & Save</h4>
     
+    <div id="ai-analysis-result" style="margin-bottom:10px; padding:8px; background:rgba(20, 184, 166, 0.1); border-left:3px solid var(--accent); border-radius:4px; font-size:11px;">
+      <div style="font-weight:bold; color:var(--accent); margin-bottom:4px;">Alignment Match: <span id="alignment-score">--</span>%</div>
+      <div id="alignment-reason" style="color:var(--text); line-height:1.4;">Analyzing profile fit...</div>
+    </div>
+
     <div class="form-group">
       <label class="label">TITLE</label>
       <input type="text" id="draft-title" class="input" />
@@ -127,13 +149,8 @@
       <input type="text" id="draft-org" class="input" />
     </div>
 
-    <div class="form-group">
-      <label class="label">DEADLINE</label>
-      <input type="date" id="draft-deadline" class="input" />
-    </div>
-
     <button id="btn-save-draft" class="btn btn-primary">
-      💾 Confirm & Save Opportunity
+      💾 Save to Tracker
     </button>
   </div>
 
