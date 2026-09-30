@@ -30,16 +30,15 @@ const rateLimit = require('express-rate-limit');
 // Middleware
 app.use(helmet({ crossOriginResourcePolicy: false }));
 
-// Restrict CORS to specific origins in production, but be flexible if CLIENT_URL is not set
-const allowedOrigins = ['http://localhost:3000', 'http://localhost:5173', 'http://127.0.0.1:5173'];
-if (env.CLIENT_URL) allowedOrigins.push(env.CLIENT_URL);
-
-const corsOptions = {
-  origin: env.NODE_ENV === 'production' && env.CLIENT_URL ? env.CLIENT_URL : '*',
+// Completely permissive CORS for development and testing to prevent Network Errors
+app.use(cors({
+  origin: function (origin, callback) {
+    callback(null, true); // Always allow
+  },
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-payment-signature']
-};
-app.use(cors(corsOptions));
+}));
 
 // Rate limiting
 const limiter = rateLimit({

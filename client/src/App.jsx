@@ -28,48 +28,29 @@ const ProtectedRoute = ({ children }) => {
 };
 
 function AppContent() {
-  const location = useLocation();
-
-  // Landing & Auth pages use Top Navbar; all other workspace routes use Left Sidebar
-  const isLandingOrAuth = ['/', '/login', '/register'].includes(location.pathname);
-
-  if (!isLandingOrAuth) {
-    return (
-      <div className="app-layout-sidebar">
-        <Sidebar />
-        <div className="sidebar-main-content">
-          <main className="main-content">
-            <Routes>
-              <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
-              <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-              <Route path="/discover" element={<DiscoverPage />} />
-              <Route path="/tracker" element={<ProtectedRoute><MyOpportunitiesPage /></ProtectedRoute>} />
-              <Route path="/ai-copilot" element={<AiAssistantPage />} />
-              <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-              <Route path="/roadmap" element={<ProtectedRoute><RoadmapPage /></ProtectedRoute>} />
-              <Route path="/upgrade" element={<ProtectedRoute><UpgradePage /></ProtectedRoute>} />
-              <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
-            </Routes>
-          </main>
-          <Footer />
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="app-container">
-      <Navbar />
-      <main className="main-content">
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </main>
-      <Footer />
+    <div className="app-layout-sidebar">
+      <Sidebar />
+      <div className="sidebar-main-content">
+        <main className="main-content">
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
+            <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+            <Route path="/discover" element={<DiscoverPage />} />
+            <Route path="/tracker" element={<ProtectedRoute><MyOpportunitiesPage /></ProtectedRoute>} />
+            <Route path="/ai-copilot" element={<AiAssistantPage />} />
+            <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+            <Route path="/roadmap" element={<ProtectedRoute><RoadmapPage /></ProtectedRoute>} />
+            <Route path="/upgrade" element={<ProtectedRoute><UpgradePage /></ProtectedRoute>} />
+            <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </main>
+        <Footer />
+      </div>
     </div>
   );
 }
