@@ -250,6 +250,17 @@ async function runTests() {
     assert(chatRes.status === 200, 'POST /api/ai/chat returns 200');
     assert(Boolean(chatRes.body.data.answer), 'AI Copilot answers contextual questions');
 
+    const alignRes = await request(server, {
+      path: '/api/ai/align',
+      method: 'POST',
+      headers: { Authorization: `Bearer ${authToken}` }
+    }, {
+      opportunityId: firstOppId
+    });
+    assert(alignRes.status === 200, 'POST /api/ai/align returns 200');
+    assert(typeof alignRes.body.data.overallScore === 'number', 'Alignment returns numerical score');
+    assert(Boolean(alignRes.body.data.whyItMatches), 'Alignment returns text explanation');
+
     // 11. Export & Import
     console.log('\n--- 7. Export, Backup & Import ---');
     const exportJsonRes = await request(server, {

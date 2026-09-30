@@ -13,17 +13,30 @@ import {
   HelpCircle, 
   ListChecks, 
   Bookmark, 
-  Check 
+  Check,
+  Target
 } from 'lucide-react';
 
 export const OpportunityDetailModal = ({ opportunity, onClose, onTrack, isTracked, currentStatus }) => {
   const [aiSummary, setAiSummary] = useState(null);
   const [eligibility, setEligibility] = useState(null);
-  const [checklist, setChecklist] = useState(null);
+  const [alignment, setAlignment] = useState(null);
   const [loadingAi, setLoadingAi] = useState(false);
-  const [activeTab, setActiveTab] = useState('details'); // 'details' | 'ai'
+  const [activeTab, setActiveTab] = useState('details'); // 'details' | 'ai' | 'alignment'
 
   if (!opportunity) return null;
+
+  const handleAlignCareer = async () => {
+    setLoadingAi(true);
+    try {
+      const res = await api.alignCareer(opportunity.id);
+      if (res.success) setAlignment(res.data);
+    } catch (err) {
+      console.error('Failed to calculate alignment:', err);
+    } finally {
+      setLoadingAi(false);
+    }
+  };
 
   const handleFetchAiSummary = async () => {
     setLoadingAi(true);
@@ -84,12 +97,21 @@ export const OpportunityDetailModal = ({ opportunity, onClose, onTrack, isTracke
         </div>
 
         {/* Tab Selector */}
-        <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid var(--border-color)', marginBottom: '20px', paddingBottom: '8px' }}>
+        <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid var(--border-color)', marginBottom: '20px', paddingBottom: '8px', overflowX: 'auto' }}>
           <button 
             onClick={() => setActiveTab('details')}
             className={`btn btn-sm ${activeTab === 'details' ? 'btn-primary' : 'btn-secondary'}`}
           >
             Overview & Requirements
+          </button>
+          <button 
+            onClick={() => {
+              setActiveTab('alignment');
+              if (!alignment) handleAlignCareer();
+            }}
+            className={`btn btn-sm ${activeTab === 'alignment' ? 'btn-primary' : 'btn-secondary'}`}
+          >
+            <Target size={16} /> Career Alignment
           </button>
           <button 
             onClick={() => {
@@ -165,6 +187,87 @@ export const OpportunityDetailModal = ({ opportunity, onClose, onTrack, isTracke
               </div>
             )}
 
+          </div>
+        )}
+
+        {/* TAB 2: ALIGNMENT */}
+        {activeTab === 'alignment' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <h4 style={{ fontSize: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Target size={18} color="var(--accent-secondary)" />
+                Career Alignment Engine
+              </h4>
+              <button onClick={handleAlignCareer} className="btn btn-secondary btn-sm" disabled={loadingAi}>
+                Recalculate
+              </button>
+            </div>
+
+            {loadingAi && !alignment && <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Analyzing your profile against this opportunity...</p>}
+
+            {alignment && (
+              <>
+                {/* Overall Score */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'var(--bg-tertiary)', padding: '16px', borderRadius: 'var(--radius-lg)' }}>
+                  <div style={{ 
+                    width: '60px', height: '60px', borderRadius: '50%', background: 'var(--accent-light)', color: 'var(--accent-primary)', 
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: '800' 
+                  }}>
+                    {alignment.overallScore}
+                  </div>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '16px' }}>Alignment Score</h3>
+                    <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)' }}>Based on skills, education, and career goals.</p>
+                  </div>
+                </div>
+
+                {/* Sub-scores */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                  {[
+                    { label: 'Skills', data: alignment.skillAlignment },
+                    { label: 'Education', data: alignment.educationAlignment },
+                    { label: 'Experience', data: alignment.experienceAlignment },
+                    { label: 'Goals', data: alignment.careerGoalAlignment },
+                    { label: 'Interests', data: alignment.interestAlignment },
+                    { label: 'Location', data: alignment.locationAlignment }
+                  ].map((sub, i) => (
+                    <div key={i} style={{ border: '1px solid var(--border-color)', borderRadius: '8px', padding: '12px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                        <span style={{ fontSize: '13px', fontWeight: '600' }}>{sub.label}</span>
+                        <span style={{ fontSize: '13px', fontWeight: '800', color: sub.data?.score >= 70 ? 'var(--status-offered)' : 'var(--text-primary)' }}>
+                          {sub.data?.score}/100
+                        </span>
+                      </div>
+                      <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-secondary)' }}>{sub.data?.explanation}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Narrative Sections */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--bg-secondary)', padding: '16px', borderRadius: 'var(--radius-lg)' }}>
+                  <div>
+                    <strong style={{ display: 'block', fontSize: '13px', marginBottom: '4px', color: 'var(--accent-primary)' }}>Why this matches you</strong>
+                    <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-primary)' }}>{alignment.whyItMatches}</p>
+                  </div>
+                  <div>
+                    <strong style={{ display: 'block', fontSize: '13px', marginBottom: '4px', color: 'var(--status-offered)' }}>What you already have</strong>
+                    <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-primary)' }}>{alignment.whatYouHave}</p>
+                  </div>
+                  <div>
+                    <strong style={{ display: 'block', fontSize: '13px', marginBottom: '4px', color: 'var(--status-rejected)' }}>What may be missing</strong>
+                    <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-primary)' }}>{alignment.whatIsMissing}</p>
+                  </div>
+                  <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '12px', marginTop: '4px' }}>
+                    <strong style={{ display: 'block', fontSize: '13px', marginBottom: '4px' }}>Recommended Next Action</strong>
+                    <p style={{ margin: 0, fontSize: '14px', fontWeight: '500', color: 'var(--text-primary)' }}>{alignment.recommendedNextAction}</p>
+                  </div>
+                </div>
+
+                <p style={{ fontSize: '11px', color: 'var(--text-muted)', fontStyle: 'italic', textAlign: 'center' }}>
+                  {alignment.disclaimer}
+                </p>
+              </>
+            )}
           </div>
         )}
 

@@ -8,5 +8,6 @@ router.post('/summarize', optionalAuth, aiController.summarizeOpportunity);
 router.post('/eligibility-check', optionalAuth, aiController.checkEligibility);
 router.post('/checklist', optionalAuth, aiController.generateChecklist);
 router.post('/chat', optionalAuth, aiController.copilotChat);
+router.post('/align', optionalAuth, aiController.alignCareer);
 
 module.exports = router;

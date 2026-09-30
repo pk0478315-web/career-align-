@@ -67,6 +67,7 @@ export const api = {
   checkEligibility: (opportunityId) => apiClient.post('/ai/eligibility-check', { opportunityId }),
   generateChecklist: (opportunityId) => apiClient.post('/ai/checklist', { opportunityId }),
   copilotChat: (payload) => apiClient.post('/ai/chat', payload),
+  alignCareer: (opportunityId) => apiClient.post('/ai/align', { opportunityId }),
 
   // Export & Import
   exportData: (format = 'json', scope = 'my-opportunities') => 

@@ -155,9 +155,54 @@ const copilotChat = async (req, res, next) => {
   }
 };
 
+const alignCareer = async (req, res, next) => {
+  try {
+    const { opportunityId } = req.body;
+
+    if (!opportunityId) {
+      return sendError(res, 'opportunityId is required', 400, 'VALIDATION_ERROR');
+    }
+
+    const opportunity = await dbStore.getOpportunityById(opportunityId);
+    if (!opportunity) {
+      return sendError(res, 'Opportunity not found', 404, 'NOT_FOUND');
+    }
+
+    let profile = null;
+    if (req.user) {
+      profile = await dbStore.getProfile(req.user.id);
+    } else {
+      profile = {
+        educationLevel: 'Undergraduate',
+        major: 'General Studies',
+        skills: ['Python', 'JavaScript'],
+        interests: ['Technology', 'Learning'],
+        careerGoals: 'Entry Level Professional',
+        remotePreference: 'flexible'
+      };
+    }
+
+    const alignmentEngine = require('../services/alignmentEngine');
+    const alignmentData = await alignmentEngine.generateAlignment(profile, opportunity);
+
+    await dbStore.logAiInteraction(
+      req.user?.id || null,
+      opportunityId,
+      'career_alignment',
+      { opportunityId },
+      alignmentData
+    );
+
+    return sendSuccess(res, alignmentData);
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   summarizeOpportunity,
   checkEligibility,
   generateChecklist,
-  copilotChat
+  copilotChat,
+  alignCareer
 };
