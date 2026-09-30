@@ -35,13 +35,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   btnCapture.addEventListener('click', async () => {
     statusNotice.innerText = 'Extracting metadata from current tab DOM...';
     
-    // First: Request DOM extraction from active tab content script
     if (activeTab && activeTab.id) {
       chrome.tabs.sendMessage(activeTab.id, { action: 'EXTRACT_PAGE_METADATA' }, async (response) => {
         let extractedData = null;
 
         if (chrome.runtime.lastError || !response || !response.metadata) {
-          // Content script not loaded on restricted page or error -> fall back to tab info
           extractedData = {
             title: activeTab.title || 'Opportunity Title',
             organization: tabOrg.innerText.toUpperCase(),
@@ -52,34 +50,16 @@ document.addEventListener('DOMContentLoaded', async () => {
           extractedData = response.metadata;
         }
 
-        // Fill review input fields
         document.getElementById('draft-title').value = extractedData.title;
         document.getElementById('draft-org').value = extractedData.organization;
         
         reviewSection.style.display = 'block';
         statusNotice.innerText = '✨ Details extracted! Review & click Save.';
-
-        // Also try background server enrichment asynchronously
-        try {
-          const apiRes = await fetch(`${API_BASE}/opportunities/capture-url`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url: currentTabUrl })
-          });
-          const json = await apiRes.json();
-          if (json.success && json.data.extracted) {
-            if (json.data.extracted.description) {
-              extractedData.description = json.data.extracted.description;
-            }
-          }
-        } catch {
-          // Server enrichment optional
-        }
       });
     }
   });
 
-  // 2. Save Draft Action: Save to chrome.storage.local AND backend API
+  // 2. Save Draft Action: Save to local storage AND post to server database
   btnSaveDraft.addEventListener('click', async () => {
     const title = document.getElementById('draft-title').value.trim();
     const organization = document.getElementById('draft-org').value.trim();
@@ -90,10 +70,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
-    statusNotice.innerText = 'Saving opportunity...';
+    statusNotice.innerText = 'Saving to database & extension storage...';
 
     const oppRecord = {
-      id: `opp-ext-${Date.now()}`,
       title,
       organization: organization || 'Web Capture',
       category: 'other',
@@ -101,35 +80,30 @@ document.addEventListener('DOMContentLoaded', async () => {
       sourceUrl: currentTabUrl,
       applicationUrl: currentTabUrl,
       deadline: deadline ? new Date(deadline).toISOString() : null,
-      isRemote: true,
-      savedAt: new Date().toISOString()
+      isRemote: true
     };
 
-    // Save locally in Chrome Extension storage so it NEVER fails
+    // Save locally in Chrome Extension storage
     chrome.storage.local.get(['savedOpportunities'], async (data) => {
       const existing = data.savedOpportunities || [];
-      existing.unshift(oppRecord);
-      chrome.storage.local.set({ savedOpportunities: existing }, () => {
-        statusNotice.innerText = '✅ Saved locally to extension storage!';
-      });
+      existing.unshift({ ...oppRecord, savedAt: new Date().toISOString() });
+      chrome.storage.local.set({ savedOpportunities: existing });
 
-      // Also try posting to live backend
+      // Post to live backend API database
       try {
-        const token = await getStoredToken();
-        const headers = { 'Content-Type': 'application/json' };
-        if (token) headers['Authorization'] = `Bearer ${token}`;
-
         const response = await fetch(`${API_BASE}/opportunities`, {
           method: 'POST',
-          headers,
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(oppRecord)
         });
         const res = await response.json();
         if (res.success) {
-          statusNotice.innerText = '✅ Successfully saved to server database & extension storage!';
+          statusNotice.innerText = '🎉 Saved to live server database & extension tracker!';
+        } else {
+          statusNotice.innerText = '✅ Saved to extension local tracker!';
         }
-      } catch {
-        statusNotice.innerText = '✅ Saved to extension tracker!';
+      } catch (err) {
+        statusNotice.innerText = '✅ Saved to extension local tracker!';
       }
     });
   });
@@ -145,12 +119,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
   });
-
-  function getStoredToken() {
-    return new Promise(resolve => {
-      chrome.storage.local.get(['jwtToken'], (res) => resolve(res.jwtToken || null));
-    });
-  }
 
   function getSampleProfile() {
     return {
