@@ -112,13 +112,58 @@ Respond strictly in valid JSON format:
   "recommendedNextAction": "Actionable next step for the student."
 }`;
 
+    const schema = {
+      type: "OBJECT",
+      properties: {
+        skillAlignment: {
+          type: "OBJECT",
+          properties: { score: { type: "NUMBER" }, explanation: { type: "STRING" } },
+          required: ["score", "explanation"]
+        },
+        educationAlignment: {
+          type: "OBJECT",
+          properties: { score: { type: "NUMBER" }, explanation: { type: "STRING" } },
+          required: ["score", "explanation"]
+        },
+        locationAlignment: {
+          type: "OBJECT",
+          properties: { score: { type: "NUMBER" }, explanation: { type: "STRING" } },
+          required: ["score", "explanation"]
+        },
+        experienceAlignment: {
+          type: "OBJECT",
+          properties: { score: { type: "NUMBER" }, explanation: { type: "STRING" } },
+          required: ["score", "explanation"]
+        },
+        careerGoalAlignment: {
+          type: "OBJECT",
+          properties: { score: { type: "NUMBER" }, explanation: { type: "STRING" } },
+          required: ["score", "explanation"]
+        },
+        interestAlignment: {
+          type: "OBJECT",
+          properties: { score: { type: "NUMBER" }, explanation: { type: "STRING" } },
+          required: ["score", "explanation"]
+        },
+        matchingStrengths: { type: "ARRAY", items: { type: "STRING" } },
+        missingRequirements: { type: "ARRAY", items: { type: "STRING" } },
+        potentialGaps: { type: "ARRAY", items: { type: "STRING" } },
+        whyItMatches: { type: "STRING" },
+        whatYouHave: { type: "STRING" },
+        whatIsMissing: { type: "STRING" },
+        recommendedNextAction: { type: "STRING" }
+      },
+      required: [
+        "skillAlignment", "educationAlignment", "locationAlignment", 
+        "experienceAlignment", "careerGoalAlignment", "interestAlignment",
+        "matchingStrengths", "missingRequirements", "potentialGaps",
+        "whyItMatches", "whatYouHave", "whatIsMissing", "recommendedNextAction"
+      ]
+    };
+
     let aiData = null;
     try {
-      const aiResponse = await aiService.callGemini(prompt);
-      if (aiResponse) {
-        const cleaned = aiResponse.replace(/```json/g, '').replace(/```/g, '').trim();
-        aiData = JSON.parse(cleaned);
-      }
+      aiData = await aiService.callGeminiWithSchema(prompt, schema, 2);
     } catch (e) {
       console.warn('Alignment Engine LLM Parse Error:', e);
     }

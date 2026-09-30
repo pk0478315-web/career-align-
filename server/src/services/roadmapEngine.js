@@ -46,16 +46,63 @@ Generate a structured JSON roadmap matching this exact format:
 Ensure "status" in milestones is exactly "pending".
 `;
 
+    const schema = {
+      type: "OBJECT",
+      properties: {
+        targetCareer: { type: "STRING" },
+        currentState: { type: "STRING" },
+        currentSkills: { type: "ARRAY", items: { type: "STRING" } },
+        missingSkills: { type: "ARRAY", items: { type: "STRING" } },
+        learningPriorities: {
+          type: "ARRAY",
+          items: {
+            type: "OBJECT",
+            properties: {
+              topic: { type: "STRING" },
+              reason: { type: "STRING" },
+              resources: { type: "STRING" }
+            },
+            required: ["topic", "reason", "resources"]
+          }
+        },
+        suggestedProjects: {
+          type: "ARRAY",
+          items: {
+            type: "OBJECT",
+            properties: {
+              title: { type: "STRING" },
+              description: { type: "STRING" },
+              skills_used: { type: "ARRAY", items: { type: "STRING" } }
+            },
+            required: ["title", "description", "skills_used"]
+          }
+        },
+        milestones: {
+          type: "ARRAY",
+          items: {
+            type: "OBJECT",
+            properties: {
+              id: { type: "STRING" },
+              title: { type: "STRING" },
+              description: { type: "STRING" },
+              status: { type: "STRING", enum: ["pending"] }
+            },
+            required: ["id", "title", "description", "status"]
+          }
+        },
+        progress: { type: "NUMBER" }
+      },
+      required: [
+        "targetCareer", "currentState", "currentSkills", "missingSkills", 
+        "learningPriorities", "suggestedProjects", "milestones", "progress"
+      ]
+    };
+
     let aiData = null;
     try {
-      const aiResponse = await aiService.callGemini(prompt);
-      if (aiResponse) {
-        const cleaned = aiResponse.replace(/```json/g, '').replace(/```/g, '').trim();
-        aiData = JSON.parse(cleaned);
-      }
+      aiData = await aiService.callGeminiWithSchema(prompt, schema, 2);
     } catch (e) {
       console.error('Roadmap Engine LLM Parse Error:', e);
-      throw new Error('Failed to generate career roadmap from AI.');
     }
 
     if (!aiData || !aiData.milestones) {

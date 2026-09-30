@@ -38,13 +38,55 @@ Return strictly valid JSON matching this schema:
 }
 `;
 
+    const schema = {
+      type: "OBJECT",
+      properties: {
+        education: {
+          type: "ARRAY",
+          items: {
+            type: "OBJECT",
+            properties: {
+              institution: { type: "STRING" },
+              degree: { type: "STRING" },
+              year: { type: "STRING" }
+            },
+            required: ["institution", "degree", "year"]
+          }
+        },
+        skills: { type: "ARRAY", items: { type: "STRING" } },
+        experience: {
+          type: "ARRAY",
+          items: {
+            type: "OBJECT",
+            properties: {
+              company: { type: "STRING" },
+              role: { type: "STRING" },
+              duration: { type: "STRING" },
+              description: { type: "STRING" }
+            },
+            required: ["company", "role", "duration", "description"]
+          }
+        },
+        projects: {
+          type: "ARRAY",
+          items: {
+            type: "OBJECT",
+            properties: {
+              name: { type: "STRING" },
+              description: { type: "STRING" }
+            },
+            required: ["name", "description"]
+          }
+        },
+        certifications: { type: "ARRAY", items: { type: "STRING" } },
+        achievements: { type: "ARRAY", items: { type: "STRING" } }
+      },
+      required: ["education", "skills", "experience", "projects", "certifications", "achievements"]
+    };
+
     let parsed = null;
     try {
-      const response = await aiService.callGemini(prompt);
-      if (response) {
-        const cleaned = response.replace(/```json/g, '').replace(/```/g, '').trim();
-        parsed = JSON.parse(cleaned);
-      }
+      parsed = await aiService.callGeminiWithSchema(prompt, schema, 2);
     } catch (e) {
       console.error('Resume Extraction Parse Error:', e);
     }
@@ -82,13 +124,26 @@ Return strictly valid JSON matching this schema:
 }
 `;
 
+    const schema = {
+      type: "OBJECT",
+      properties: {
+        matchingSkills: { type: "ARRAY", items: { type: "STRING" } },
+        missingSkills: { type: "ARRAY", items: { type: "STRING" } },
+        relevantExperience: { type: "ARRAY", items: { type: "STRING" } },
+        missingExperience: { type: "ARRAY", items: { type: "STRING" } },
+        relevantProjects: { type: "ARRAY", items: { type: "STRING" } },
+        improvementSuggestions: { type: "ARRAY", items: { type: "STRING" } },
+        relevantKeywords: { type: "ARRAY", items: { type: "STRING" } }
+      },
+      required: [
+        "matchingSkills", "missingSkills", "relevantExperience", "missingExperience",
+        "relevantProjects", "improvementSuggestions", "relevantKeywords"
+      ]
+    };
+
     let parsed = null;
     try {
-      const response = await aiService.callGemini(prompt);
-      if (response) {
-        const cleaned = response.replace(/```json/g, '').replace(/```/g, '').trim();
-        parsed = JSON.parse(cleaned);
-      }
+      parsed = await aiService.callGeminiWithSchema(prompt, schema, 2);
     } catch (e) {
       console.error('Resume Alignment Parse Error:', e);
     }
@@ -131,13 +186,55 @@ Return strictly valid JSON matching the same schema as the original resume, but 
 }
 `;
 
+    const schema = {
+      type: "OBJECT",
+      properties: {
+        education: {
+          type: "ARRAY",
+          items: {
+            type: "OBJECT",
+            properties: {
+              institution: { type: "STRING" },
+              degree: { type: "STRING" },
+              year: { type: "STRING" }
+            },
+            required: ["institution", "degree", "year"]
+          }
+        },
+        skills: { type: "ARRAY", items: { type: "STRING" } },
+        experience: {
+          type: "ARRAY",
+          items: {
+            type: "OBJECT",
+            properties: {
+              company: { type: "STRING" },
+              role: { type: "STRING" },
+              duration: { type: "STRING" },
+              description: { type: "STRING" }
+            },
+            required: ["company", "role", "duration", "description"]
+          }
+        },
+        projects: {
+          type: "ARRAY",
+          items: {
+            type: "OBJECT",
+            properties: {
+              name: { type: "STRING" },
+              description: { type: "STRING" }
+            },
+            required: ["name", "description"]
+          }
+        },
+        certifications: { type: "ARRAY", items: { type: "STRING" } },
+        achievements: { type: "ARRAY", items: { type: "STRING" } }
+      },
+      required: ["education", "skills", "experience", "projects", "certifications", "achievements"]
+    };
+
     let parsed = null;
     try {
-      const response = await aiService.callGemini(prompt);
-      if (response) {
-        const cleaned = response.replace(/```json/g, '').replace(/```/g, '').trim();
-        parsed = JSON.parse(cleaned);
-      }
+      parsed = await aiService.callGeminiWithSchema(prompt, schema, 2);
     } catch (e) {
       console.error('Resume Improvement Parse Error:', e);
     }

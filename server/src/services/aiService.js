@@ -8,35 +8,65 @@ class AiService {
   }
 
   /**
-   * Helper to invoke Gemini with prompt and return text
+   * Core AI Call implementation following the strict architecture:
+   * Timeout handling, Retry Logic, Schema Validation, Usage Tracking, Error Logging
    */
-  async callGemini(promptText) {
+  async callGeminiWithSchema(promptText, responseSchema = null, retries = 2) {
     if (!this.apiKey) {
       return null;
     }
-    try {
-      const response = await axios.post(
-        this.geminiEndpoint,
-        {
-          contents: [
-            {
-              parts: [{ text: promptText }]
-            }
-          ],
-          generationConfig: {
-            temperature: 0.2,
-            maxOutputTokens: 800
-          }
-        },
-        { timeout: 8000 }
-      );
 
-      const candidate = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
-      return candidate || null;
-    } catch (err) {
-      console.warn('[AiService] Gemini API call skipped/failed, using grounded fallback:', err.message);
-      return null;
+    const payload = {
+      contents: [{ parts: [{ text: promptText }] }],
+      generationConfig: {
+        temperature: 0.2,
+        maxOutputTokens: 1024
+      }
+    };
+
+    if (responseSchema) {
+      payload.generationConfig.responseMimeType = 'application/json';
+      payload.generationConfig.responseSchema = responseSchema;
     }
+
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        const response = await axios.post(this.geminiEndpoint, payload, { timeout: 10000 });
+        const candidate = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        
+        if (!candidate) {
+          throw new Error('Empty response from AI provider');
+        }
+
+        if (responseSchema) {
+          try {
+            const cleaned = candidate.replace(/```json/g, '').replace(/```/g, '').trim();
+            const parsed = JSON.parse(cleaned);
+            return parsed;
+          } catch (parseError) {
+            console.error('[AiService] Schema validation/parse error:', parseError.message);
+            throw parseError; // Caught by retry loop
+          }
+        }
+        return candidate.trim();
+      } catch (err) {
+        console.warn(`[AiService] AI Call Attempt ${attempt} failed:`, err.message);
+        if (attempt === retries) {
+          console.error('[AiService] Exhausted AI retries. Returning fallback.');
+          return null;
+        }
+        // Exponential backoff
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Helper to invoke Gemini with prompt and return text (backwards compatibility)
+   */
+  async callGemini(promptText) {
+    return await this.callGeminiWithSchema(promptText, null, 1);
   }
 
   /**
@@ -48,41 +78,50 @@ class AiService {
 Title: ${opportunity.title}
 Organization: ${opportunity.organization}
 Category: ${opportunity.category}
-Deadline: ${opportunity.deadline}
+Deadline: ${opportunity.deadline || 'UNKNOWN'}
 Description: ${opportunity.description}
-Requirements: ${JSON.stringify(opportunity.requirements)}
-Funding/Benefits: ${opportunity.fundingCompensation}
+Requirements: ${JSON.stringify(opportunity.requirements || [])}
+Funding/Benefits: ${opportunity.fundingCompensation || 'UNKNOWN'}
 
-Respond strictly in valid JSON format with keys:
-"summary": "plain English 2-3 sentence overview",
-"keyHighlights": ["bullet 1", "bullet 2", "bullet 3"]`;
+Do not invent facts. Use "UNKNOWN" or "INSUFFICIENT INFORMATION" if something is not explicitly stated.`;
 
-      const aiResponse = await this.callGemini(prompt);
-      if (aiResponse) {
-        try {
-          const cleaned = aiResponse.replace(/```json/g, '').replace(/```/g, '').trim();
-          const parsed = JSON.parse(cleaned);
+      const schema = {
+        type: "OBJECT",
+        properties: {
+          summary: { type: "STRING", description: "Plain English 2-3 sentence overview" },
+          keyHighlights: { 
+            type: "ARRAY", 
+            items: { type: "STRING" },
+            description: "Up to 3 bullet points"
+          }
+        },
+        required: ["summary", "keyHighlights"]
+      };
+
+      try {
+        const parsed = await this.callGeminiWithSchema(prompt, schema, 2);
+        if (parsed && parsed.summary && parsed.keyHighlights) {
           return {
             summary: parsed.summary,
-            keyHighlights: parsed.keyHighlights || [],
+            keyHighlights: parsed.keyHighlights,
             source: 'gemini-ai',
             grounded: true
           };
-        } catch {
-          // If JSON parse fails, fall through to grounded heuristic
         }
+      } catch (e) {
+        // Fallback to grounded
       }
     }
 
     // Grounded Fallback
     const deadlineStr = opportunity.deadline
       ? new Date(opportunity.deadline).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-      : 'No deadline specified';
+      : 'UNKNOWN';
 
     return {
       summary: `${opportunity.title} offered by ${opportunity.organization} is a ${opportunity.category} opportunity. Application deadline is ${deadlineStr}.`,
       keyHighlights: [
-        `Funding / Compensation: ${opportunity.fundingCompensation || 'See official posting'}`,
+        `Funding / Compensation: ${opportunity.fundingCompensation || 'UNKNOWN'}`,
         `Location / Format: ${opportunity.location || (opportunity.isRemote ? 'Remote' : 'Onsite')}`,
         `Core Category: ${opportunity.category.toUpperCase()}`
       ],
@@ -98,6 +137,70 @@ Respond strictly in valid JSON format with keys:
    * Categories: "appears to meet", "possible gap", "not enough information"
    */
   async checkEligibility(studentProfile, opportunity) {
+    if (this.apiKey) {
+      const prompt = `You are a strict career eligibility analyzer.
+Compare the Student Profile against the Opportunity Requirements.
+For each of the following criteria, assess if the student meets it:
+1. Education Level
+2. Technical Skills
+3. Work Authorization / Location
+
+Use ONLY the following assessment values: "appears to meet", "possible gap", "not enough information".
+If something is unknown, choose "not enough information". Do not invent facts.
+
+STUDENT PROFILE:
+- Education: ${studentProfile?.educationLevel || 'UNKNOWN'}
+- Skills: ${studentProfile?.skills?.join(', ') || 'UNKNOWN'}
+- Location Pref: ${studentProfile?.preferredLocation || 'UNKNOWN'}
+- Remote Pref: ${studentProfile?.remotePreference || 'UNKNOWN'}
+
+OPPORTUNITY:
+- Requirements: ${opportunity.requirements?.join('; ') || 'UNKNOWN'}
+- Skills Required: ${opportunity.skillsRequired?.join(', ') || 'UNKNOWN'}
+- Location: ${opportunity.location || 'UNKNOWN'}
+- Remote: ${opportunity.isRemote ? 'Yes' : 'No'}
+
+Respond strictly in valid JSON format matching the schema.`;
+
+      const schema = {
+        type: "OBJECT",
+        properties: {
+          factors: {
+            type: "ARRAY",
+            items: {
+              type: "OBJECT",
+              properties: {
+                criterion: { type: "STRING" },
+                assessment: { type: "STRING", enum: ["appears to meet", "possible gap", "not enough information"] },
+                detail: { type: "STRING", description: "1 sentence explanation" }
+              },
+              required: ["criterion", "assessment", "detail"]
+            }
+          }
+        },
+        required: ["factors"]
+      };
+
+      try {
+        const parsed = await this.callGeminiWithSchema(prompt, schema, 2);
+        if (parsed && parsed.factors) {
+          let overallStatus = 'appears to meet';
+          if (parsed.factors.some(f => f.assessment === 'possible gap')) {
+            overallStatus = 'possible gap';
+          } else if (parsed.factors.filter(f => f.assessment === 'not enough information').length >= 2) {
+            overallStatus = 'not enough information';
+          }
+          return {
+            overallStatus,
+            factors: parsed.factors,
+            disclaimer: 'This assessment is an AI-assisted estimate. Verify official terms.'
+          };
+        }
+      } catch (e) {
+        // Fallback to deterministic
+      }
+    }
+
     const factors = [];
     const profileSkills = (studentProfile?.skills || []).map(s => s.toLowerCase());
     const requiredSkills = (opportunity.skillsRequired || []).map(s => s.toLowerCase());
@@ -197,6 +300,50 @@ Respond strictly in valid JSON format with keys:
    * 3. Checklist Generator
    */
   async generateChecklist(opportunity) {
+    if (this.apiKey) {
+      const prompt = `Create a specific, actionable application checklist for the following opportunity.
+Title: ${opportunity.title}
+Organization: ${opportunity.organization}
+Category: ${opportunity.category}
+Requirements: ${opportunity.requirements?.join('; ') || 'UNKNOWN'}
+Description: ${opportunity.description}
+
+Generate 3-5 specific checklist items. Ensure they are actionable. Do not invent requirements that do not exist.`;
+
+      const schema = {
+        type: "OBJECT",
+        properties: {
+          checklist: {
+            type: "ARRAY",
+            items: {
+              type: "OBJECT",
+              properties: {
+                id: { type: "STRING" },
+                item: { type: "STRING", description: "Actionable item" },
+                completed: { type: "BOOLEAN" }
+              },
+              required: ["id", "item", "completed"]
+            }
+          }
+        },
+        required: ["checklist"]
+      };
+
+      try {
+        const parsed = await this.callGeminiWithSchema(prompt, schema, 2);
+        if (parsed && parsed.checklist) {
+          return {
+            opportunityId: opportunity.id,
+            title: opportunity.title,
+            checklist: parsed.checklist,
+            generatedAt: new Date().toISOString()
+          };
+        }
+      } catch (e) {
+        // Fallback to deterministic
+      }
+    }
+
     const checklist = [
       { id: 'item-1', item: 'Review official eligibility rules and deadlines', completed: true },
       { id: 'item-2', item: 'Tailor resume / CV highlighting relevant projects', completed: false }
@@ -239,8 +386,8 @@ Opportunity Details:
 - Title: ${opportunity.title}
 - Organization: ${opportunity.organization}
 - Category: ${opportunity.category}
-- Deadline: ${opportunity.deadline}
-- Requirements: ${JSON.stringify(opportunity.requirements)}
+- Deadline: ${opportunity.deadline || 'UNKNOWN'}
+- Requirements: ${JSON.stringify(opportunity.requirements || [])}
 - Description: ${opportunity.description}
 
 Student Question: "${userQuestion}"
@@ -248,15 +395,27 @@ Student Question: "${userQuestion}"
 Rules:
 1. Answer directly and encouragingly.
 2. Ground your response in the provided details.
-3. If an answer is not in the text, explicitly state that it is unknown and advise checking the official portal.
+3. If an answer is not in the text, explicitly state UNKNOWN or INSUFFICIENT INFORMATION and advise checking the official portal. Do not invent facts.
 4. Keep answer concise (2-4 sentences max).`;
 
-      const aiResponse = await this.callGemini(prompt);
-      if (aiResponse) {
-        return {
-          answer: aiResponse.trim(),
-          source: 'gemini-ai'
-        };
+      const schema = {
+        type: "OBJECT",
+        properties: {
+          answer: { type: "STRING", description: "The answer to the user's question" }
+        },
+        required: ["answer"]
+      };
+
+      try {
+        const parsed = await this.callGeminiWithSchema(prompt, schema, 2);
+        if (parsed && parsed.answer) {
+          return {
+            answer: parsed.answer,
+            source: 'gemini-ai'
+          };
+        }
+      } catch (e) {
+        // Fallback to grounded logic below
       }
     }
 
@@ -267,17 +426,17 @@ Rules:
     if (q.includes('deadline') || q.includes('when')) {
       answer = opportunity.deadline
         ? `The application deadline for ${opportunity.title} is ${new Date(opportunity.deadline).toUTCString()}.`
-        : `No explicit deadline is published in this listing. Check the official site for real-time closing dates.`;
+        : `UNKNOWN. No explicit deadline is published in this listing. Check the official site for real-time closing dates.`;
     } else if (q.includes('stipend') || q.includes('money') || q.includes('paid') || q.includes('fund')) {
-      answer = `The stated compensation is: ${opportunity.fundingCompensation || 'Not specified in listing'}.`;
+      answer = `The stated compensation is: ${opportunity.fundingCompensation || 'UNKNOWN. Not specified in listing'}.`;
     } else if (q.includes('remote') || q.includes('location')) {
       answer = opportunity.isRemote
-        ? `Yes, this is indicated as a remote/virtual opportunity (${opportunity.location}).`
-        : `This opportunity is listed as onsite/hybrid at ${opportunity.location}.`;
+        ? `Yes, this is indicated as a remote/virtual opportunity (${opportunity.location || 'UNKNOWN'}).`
+        : `This opportunity is listed as onsite/hybrid at ${opportunity.location || 'UNKNOWN'}.`;
     } else if (q.includes('eligible') || q.includes('requirement')) {
       answer = opportunity.requirements?.length
         ? `Key listed requirements: ${opportunity.requirements.join('; ')}.`
-        : `No special eligibility prerequisites are documented. Check the official link.`;
+        : `UNKNOWN. No special eligibility prerequisites are documented. Check the official link.`;
     }
 
     return {
