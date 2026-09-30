@@ -1,7 +1,8 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar } from './components/Navbar';
+import { Sidebar } from './components/Sidebar';
 import { Footer } from './components/Footer';
 
 // Pages
@@ -23,28 +24,62 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
-export function App() {
-  return (
-    <AuthProvider>
-      <BrowserRouter>
-        <div className="app-container">
-          <Navbar />
+function AppContent() {
+  const location = useLocation();
+
+  // App routes that use the Left Sidebar Dashboard layout
+  const isDashboardRoute = [
+    '/dashboard', 
+    '/discover', 
+    '/tracker', 
+    '/ai-copilot', 
+    '/settings', 
+    '/onboarding'
+  ].includes(location.pathname);
+
+  if (isDashboardRoute) {
+    return (
+      <div className="app-layout-sidebar">
+        <Sidebar />
+        <div className="sidebar-main-content">
           <main className="main-content">
             <Routes>
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
               <Route path="/onboarding" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
               <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
               <Route path="/discover" element={<DiscoverPage />} />
               <Route path="/tracker" element={<ProtectedRoute><MyOpportunitiesPage /></ProtectedRoute>} />
               <Route path="/ai-copilot" element={<AiAssistantPage />} />
               <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-              <Route path="*" element={<Navigate to="/" replace />} />
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
           </main>
           <Footer />
         </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="app-container">
+      <Navbar />
+      <main className="main-content">
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </main>
+      <Footer />
+    </div>
+  );
+}
+
+export function App() {
+  return (
+    <AuthProvider>
+      <BrowserRouter>
+        <AppContent />
       </BrowserRouter>
     </AuthProvider>
   );
