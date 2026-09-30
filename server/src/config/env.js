@@ -1,5 +1,12 @@
 require('dotenv').config();
 
+const isProd = process.env.NODE_ENV === 'production';
+
+if (isProd && !process.env.JWT_SECRET) {
+  console.error('CRITICAL ERROR: JWT_SECRET must be defined in production!');
+  process.exit(1);
+}
+
 module.exports = {
   PORT: process.env.PORT || 5000,
   NODE_ENV: process.env.NODE_ENV || 'development',

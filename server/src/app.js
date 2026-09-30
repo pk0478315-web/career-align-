@@ -23,15 +23,35 @@ const webhookRoutes = require('./routes/webhookRoutes');
 
 const app = express();
 
-// Middleware
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 
-app.use(express.json({ limit: '5mb' }));
-app.use(express.urlencoded({ extended: true }));
+// Middleware
+app.use(helmet());
+
+// Restrict CORS to specific origins in production
+const corsOptions = {
+  origin: env.NODE_ENV === 'production' ? (env.CLIENT_URL || 'https://your-production-url.com') : ['http://localhost:3000', 'http://localhost:5173'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-payment-signature']
+};
+app.use(cors(corsOptions));
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 150, // Limit each IP to 150 requests per `window`
+  message: 'Too many requests from this IP, please try again after 15 minutes',
+  standardHeaders: true, 
+  legacyHeaders: false, 
+});
+// Apply the rate limiting middleware to all requests except in test environment
+if (env.NODE_ENV !== 'test') {
+  app.use(limiter);
+}
+
+app.use(express.json({ limit: '1mb' })); // Reduced from 5mb to 1mb for security against large payloads
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 if (env.NODE_ENV !== 'test') {
   app.use(morgan('dev'));
