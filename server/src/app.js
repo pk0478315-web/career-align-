@@ -28,7 +28,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 
 // Middleware
-app.use(helmet());
+app.use(helmet({ crossOriginResourcePolicy: false }));
 
 // Restrict CORS to specific origins in production, but be flexible if CLIENT_URL is not set
 const allowedOrigins = ['http://localhost:3000', 'http://localhost:5173', 'http://127.0.0.1:5173'];
