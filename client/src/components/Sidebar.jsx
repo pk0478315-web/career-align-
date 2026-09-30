@@ -15,7 +15,8 @@ import {
   ChevronRight,
   LayoutDashboard,
   Map,
-  ShieldAlert
+  ShieldAlert,
+  Crown
 } from 'lucide-react';
 
 export const Sidebar = () => {
@@ -49,7 +50,8 @@ export const Sidebar = () => {
     { path: '/tracker', label: 'My Tracker', icon: BookmarkCheck },
     { path: '/roadmap', label: 'Career Roadmap', icon: Map },
     { path: '/ai-copilot', label: 'AI Assistant', icon: Bot },
-    { path: '/settings', label: 'Settings', icon: Settings }
+    { path: '/settings', label: 'Settings', icon: Settings },
+    { path: '/upgrade', label: 'Upgrade Plan', icon: Crown }
   ];
 
   if (user?.role === 'admin') {

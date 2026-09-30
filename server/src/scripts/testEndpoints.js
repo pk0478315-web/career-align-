@@ -102,6 +102,13 @@ async function runTests() {
     });
     assert(meRes.status === 200, 'GET /api/auth/me returns 200 with valid session');
 
+    // Upgrade this primary test user to PRO so we can verify all PRO features in upcoming steps
+    await request(server, {
+      path: '/api/subscriptions/upgrade',
+      method: 'POST',
+      headers: { Authorization: `Bearer ${authToken}` }
+    }, { targetPlan: 'pro' });
+
     // 5. Profile: Get and Update
     console.log('\n--- 3. Student Profile ---');
     const profRes = await request(server, {
@@ -436,8 +443,47 @@ async function runTests() {
       assert(readAllRes.status === 200, 'PATCH /api/notifications/read-all succeeds');
     }
 
-    // 11. Admin & Security
-    console.log('\n--- 11. Admin & Security ---');
+    // 11. Commercialization & Entitlements
+    console.log('\n--- 11. Commercialization & Entitlements ---');
+    // Test FREE plan denial on PRO features (like resume intelligence or roadmap or advanced ai)
+    // Create a new fresh user who is strictly FREE
+    const freeUserRes = await request(server, {
+      path: '/api/auth/register',
+      method: 'POST'
+    }, { 
+      email: `freetest_${Date.now()}@test.com`, 
+      password: 'Password123!', 
+      displayName: 'Free User' 
+    });
+    const freeToken = freeUserRes.body.data.token;
+
+    // Test PRO feature denial
+    const deniedRoadmapRes = await request(server, {
+      path: '/api/roadmap',
+      method: 'GET',
+      headers: { Authorization: `Bearer ${freeToken}` }
+    });
+    assert(deniedRoadmapRes.status === 403, 'GET /api/roadmap returns 403 UPGRADE_REQUIRED for FREE user');
+
+    // Upgrade to PRO
+    const upgradeRes = await request(server, {
+      path: '/api/subscriptions/upgrade',
+      method: 'POST',
+      headers: { Authorization: `Bearer ${freeToken}` }
+    }, { targetPlan: 'pro' });
+    assert(upgradeRes.status === 200, 'POST /api/subscriptions/upgrade succeeds');
+    assert(upgradeRes.body.data.planType === 'pro', 'Plan correctly upgraded to PRO');
+
+    // Test PRO feature access
+    const allowedRoadmapRes = await request(server, {
+      path: '/api/roadmap',
+      method: 'GET',
+      headers: { Authorization: `Bearer ${freeToken}` }
+    });
+    assert(allowedRoadmapRes.status === 200, 'GET /api/roadmap returns 200 for PRO user');
+
+    // 12. Admin & Security
+    console.log('\n--- 12. Admin & Security ---');
     
     // Test normal user denied
     const deniedAdminRes = await request(server, {

@@ -97,6 +97,10 @@ export const api = {
   getNotificationPreferences: () => apiClient.get('/notifications/preferences'),
   updateNotificationPreferences: (payload) => apiClient.put('/notifications/preferences', payload),
 
+  // Subscriptions & Plans
+  getMyPlan: () => apiClient.get('/subscriptions/me'),
+  upgradePlanTestOnly: (payload) => apiClient.post('/subscriptions/upgrade', payload),
+
   // Admin
   getAdminStats: () => apiClient.get('/admin/stats'),
   getAdminUsers: () => apiClient.get('/admin/users'),

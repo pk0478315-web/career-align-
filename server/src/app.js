@@ -18,6 +18,7 @@ const roadmapRoutes = require('./routes/roadmapRoutes');
 const resumeRoutes = require('./routes/resumeRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const subscriptionRoutes = require('./routes/subscriptionRoutes');
 
 const app = express();
 
@@ -64,6 +65,7 @@ app.use('/api/roadmap', roadmapRoutes);
 app.use('/api/resume', resumeRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/subscriptions', subscriptionRoutes);
 
 // Catch-all route to serve React app index.html for client-side routing
 app.get('*', (req, res, next) => {

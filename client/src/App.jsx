@@ -15,6 +15,7 @@ import { DiscoverPage } from './pages/DiscoverPage';
 import { MyOpportunitiesPage } from './pages/MyOpportunitiesPage';
 import { AiAssistantPage } from './pages/AiAssistantPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { UpgradePage } from './pages/UpgradePage';
 import RoadmapPage from './pages/RoadmapPage';
 import { AdminDashboard } from './pages/AdminDashboard';
 
@@ -46,6 +47,7 @@ function AppContent() {
               <Route path="/ai-copilot" element={<AiAssistantPage />} />
               <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
               <Route path="/roadmap" element={<ProtectedRoute><RoadmapPage /></ProtectedRoute>} />
+              <Route path="/upgrade" element={<ProtectedRoute><UpgradePage /></ProtectedRoute>} />
               <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>

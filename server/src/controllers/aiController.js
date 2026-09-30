@@ -36,6 +36,7 @@ const summarizeOpportunity = async (req, res, next) => {
       result
     );
 
+    if (req.user) await dbStore.incrementAiUsage(req.user.id);
     return sendSuccess(res, result);
   } catch (err) {
     next(err);
@@ -77,6 +78,7 @@ const checkEligibility = async (req, res, next) => {
       analysis
     );
 
+    if (req.user) await dbStore.incrementAiUsage(req.user.id);
     return sendSuccess(res, analysis);
   } catch (err) {
     next(err);
@@ -106,6 +108,7 @@ const generateChecklist = async (req, res, next) => {
       result
     );
 
+    if (req.user) await dbStore.incrementAiUsage(req.user.id);
     return sendSuccess(res, result);
   } catch (err) {
     next(err);
@@ -149,6 +152,7 @@ const copilotChat = async (req, res, next) => {
       answerData
     );
 
+    if (req.user) await dbStore.incrementAiUsage(req.user.id);
     return sendSuccess(res, answerData);
   } catch (err) {
     next(err);
@@ -193,6 +197,7 @@ const alignCareer = async (req, res, next) => {
       alignmentData
     );
 
+    if (req.user) await dbStore.incrementAiUsage(req.user.id);
     return sendSuccess(res, alignmentData);
   } catch (err) {
     next(err);

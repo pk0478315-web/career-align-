@@ -1,13 +1,20 @@
 const express = require('express');
 const router = express.Router();
 const aiController = require('../controllers/aiController');
-const { optionalAuth } = require('../middlewares/auth');
+const { requireAuth } = require('../middlewares/auth');
+const { checkAiUsageLimit, requireFeature } = require('../middlewares/entitlementMiddleware');
+const { FEATURES } = require('../config/entitlements');
 
-// Allow optional auth so AI uses student profile context if available
-router.post('/summarize', optionalAuth, aiController.summarizeOpportunity);
-router.post('/eligibility-check', optionalAuth, aiController.checkEligibility);
-router.post('/checklist', optionalAuth, aiController.generateChecklist);
-router.post('/chat', optionalAuth, aiController.copilotChat);
-router.post('/align', optionalAuth, aiController.alignCareer);
+router.use(requireAuth);
+router.use(checkAiUsageLimit);
+
+// Base AI usage
+router.post('/summarize', aiController.summarizeOpportunity);
+router.post('/eligibility-check', aiController.checkEligibility);
+router.post('/checklist', aiController.generateChecklist);
+router.post('/chat', aiController.copilotChat);
+
+// Advanced AI usage requires ADVANCED_MATCHING entitlement
+router.post('/align', requireFeature(FEATURES.ADVANCED_MATCHING), aiController.alignCareer);
 
 module.exports = router;

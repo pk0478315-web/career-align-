@@ -822,6 +822,46 @@ const dbStore = {
       return user;
     }
     return null;
+  },
+
+  async adminUpdateUserPlan(userId, plan) {
+    if (useDb()) {
+      const dbClient = supabase;
+      if (!dbClient) return null;
+      const { data, error } = await dbClient.from('users').update({ plan_type: plan }).eq('id', userId).select().single();
+      return !error && data ? data : null;
+    }
+    const user = usersTable.find(u => u.id === userId);
+    if (user) {
+      user.plan_type = plan;
+      return user;
+    }
+    return null;
+  },
+
+  async incrementAiUsage(userId) {
+    if (useDb()) {
+      const dbClient = supabase;
+      if (!dbClient) return;
+      const { data } = await dbClient.from('users').select('ai_usage_count').eq('id', userId).single();
+      if (data) {
+        await dbClient.from('users').update({ ai_usage_count: (data.ai_usage_count || 0) + 1 }).eq('id', userId);
+      }
+    } else {
+      const u = usersTable.find(u => u.id === userId);
+      if (u) u.ai_usage_count = (u.ai_usage_count || 0) + 1;
+    }
+  },
+
+  async getUserPlanAndUsage(userId) {
+    if (useDb()) {
+      const dbClient = supabase;
+      if (!dbClient) return { plan_type: 'free', ai_usage_count: 0 };
+      const { data } = await dbClient.from('users').select('plan_type, ai_usage_count').eq('id', userId).single();
+      return data || { plan_type: 'free', ai_usage_count: 0 };
+    }
+    const u = usersTable.find(u => u.id === userId);
+    return u ? { plan_type: u.plan_type || 'free', ai_usage_count: u.ai_usage_count || 0 } : { plan_type: 'free', ai_usage_count: 0 };
   }
 };
 
