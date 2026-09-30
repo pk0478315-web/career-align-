@@ -586,6 +586,61 @@ const dbStore = {
       return this.roadmapsTable[index];
     }
     return null;
+  },
+
+  // --- USER RESUMES ---
+  async getResume(userId) {
+    if (useDb()) {
+      const dbClient = getClient(userId);
+      const { data, error } = await dbClient.from('user_resumes').select('*').eq('user_id', userId).single();
+      if (error || !data) return null;
+      return {
+        id: data.id,
+        userId: data.user_id,
+        fileName: data.file_name,
+        fileType: data.file_type,
+        fileSize: data.file_size,
+        parsedContent: data.parsed_content,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at
+      };
+    }
+    this.resumesTable = this.resumesTable || [];
+    return this.resumesTable.find(r => r.userId === userId) || null;
+  },
+
+  async saveResume(userId, resumeData) {
+    if (useDb()) {
+      const dbClient = getClient(userId);
+      const newRecord = {
+        user_id: userId,
+        file_name: resumeData.fileName,
+        file_type: resumeData.fileType,
+        file_size: resumeData.fileSize,
+        parsed_content: resumeData.parsedContent,
+        updated_at: new Date().toISOString()
+      };
+
+      const existing = await this.getResume(userId);
+      if (existing) {
+        const { error } = await dbClient.from('user_resumes').update(newRecord).eq('user_id', userId);
+        if (error) throw error;
+      } else {
+        const { error } = await dbClient.from('user_resumes').insert([newRecord]);
+        if (error) throw error;
+      }
+      return this.getResume(userId);
+    }
+    
+    this.resumesTable = this.resumesTable || [];
+    const index = this.resumesTable.findIndex(r => r.userId === userId);
+    const newResume = { id: generateId(), userId, ...resumeData, updatedAt: new Date().toISOString() };
+    if (index >= 0) {
+      this.resumesTable[index] = { ...this.resumesTable[index], ...newResume };
+    } else {
+      this.resumesTable.push(newResume);
+    }
+    return this.resumesTable.find(r => r.userId === userId);
   }
 };
 

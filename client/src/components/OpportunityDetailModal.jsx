@@ -21,8 +21,10 @@ export const OpportunityDetailModal = ({ opportunity, onClose, onTrack, isTracke
   const [aiSummary, setAiSummary] = useState(null);
   const [eligibility, setEligibility] = useState(null);
   const [alignment, setAlignment] = useState(null);
+  const [resumeAlignment, setResumeAlignment] = useState(null);
+  const [improvedResume, setImprovedResume] = useState(null);
   const [loadingAi, setLoadingAi] = useState(false);
-  const [activeTab, setActiveTab] = useState('details'); // 'details' | 'ai' | 'alignment'
+  const [activeTab, setActiveTab] = useState('details'); // 'details' | 'ai' | 'alignment' | 'resume'
 
   if (!opportunity) return null;
 
@@ -69,6 +71,32 @@ export const OpportunityDetailModal = ({ opportunity, onClose, onTrack, isTracke
       if (res.success) setChecklist(res.data.checklist);
     } catch (err) {
       console.error('Failed to generate checklist:', err);
+    } finally {
+      setLoadingAi(false);
+    }
+  };
+
+  const handleAlignResume = async () => {
+    setLoadingAi(true);
+    try {
+      const res = await api.alignResume(opportunity.id);
+      if (res.success) setResumeAlignment(res.data);
+    } catch (err) {
+      alert(err.response?.data?.error || err.message || 'Failed to align resume. Do you have a resume uploaded?');
+    } finally {
+      setLoadingAi(false);
+    }
+  };
+
+  const handleImproveResume = async () => {
+    setLoadingAi(true);
+    try {
+      const res = await api.improveResume(opportunity.id);
+      if (res.success) {
+        setImprovedResume(res.data);
+      }
+    } catch (err) {
+      alert(err.response?.data?.error || err.message || 'Failed to improve resume.');
     } finally {
       setLoadingAi(false);
     }
@@ -121,6 +149,15 @@ export const OpportunityDetailModal = ({ opportunity, onClose, onTrack, isTracke
             className={`btn btn-sm ${activeTab === 'ai' ? 'btn-primary' : 'btn-secondary'}`}
           >
             <Sparkles size={16} /> AI Eligibility & Insights
+          </button>
+          <button 
+            onClick={() => {
+              setActiveTab('resume');
+              if (!resumeAlignment) handleAlignResume();
+            }}
+            className={`btn btn-sm ${activeTab === 'resume' ? 'btn-primary' : 'btn-secondary'}`}
+          >
+            <ListChecks size={16} /> Resume Match
           </button>
         </div>
 
@@ -349,6 +386,111 @@ export const OpportunityDetailModal = ({ opportunity, onClose, onTrack, isTracke
               )}
             </div>
 
+          </div>
+        )}
+
+        {/* TAB 4: RESUME ALIGNMENT */}
+        {activeTab === 'resume' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <h4 style={{ fontSize: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <ListChecks size={18} color="var(--accent-primary)" />
+                Resume Intelligence Engine
+              </h4>
+              <button onClick={handleAlignResume} className="btn btn-secondary btn-sm" disabled={loadingAi}>
+                Recalculate Match
+              </button>
+            </div>
+
+            {loadingAi && !resumeAlignment && !improvedResume && (
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Analyzing your uploaded resume against this opportunity...</p>
+            )}
+
+            {resumeAlignment && !improvedResume && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div style={{ background: 'var(--bg-tertiary)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                    <strong style={{ color: 'var(--status-offered)', display: 'block', marginBottom: '8px' }}>Matching Skills & Experience</strong>
+                    <ul style={{ margin: 0, paddingLeft: '16px', fontSize: '13px', color: 'var(--text-primary)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      {resumeAlignment.matchingSkills?.map((s, i) => <li key={i}>{s}</li>)}
+                      {resumeAlignment.relevantExperience?.map((e, i) => <li key={i}>{e}</li>)}
+                    </ul>
+                  </div>
+                  
+                  <div style={{ background: 'var(--bg-tertiary)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                    <strong style={{ color: 'var(--status-rejected)', display: 'block', marginBottom: '8px' }}>Missing Skills & Experience</strong>
+                    <ul style={{ margin: 0, paddingLeft: '16px', fontSize: '13px', color: 'var(--text-primary)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      {resumeAlignment.missingSkills?.map((s, i) => <li key={i}>{s}</li>)}
+                      {resumeAlignment.missingExperience?.map((e, i) => <li key={i}>{e}</li>)}
+                    </ul>
+                  </div>
+                </div>
+
+                <div style={{ background: 'var(--bg-secondary)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                  <strong style={{ display: 'block', marginBottom: '8px', color: 'var(--accent-primary)' }}>Improvement Suggestions</strong>
+                  <ul style={{ margin: 0, paddingLeft: '16px', fontSize: '13px', color: 'var(--text-primary)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    {resumeAlignment.improvementSuggestions?.map((s, i) => <li key={i}>{s}</li>)}
+                  </ul>
+                  
+                  <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px dashed var(--border-color)' }}>
+                    <button onClick={handleImproveResume} className="btn btn-primary" disabled={loadingAi} style={{ width: '100%' }}>
+                      <Sparkles size={16} /> Improve My Resume For This Opportunity
+                    </button>
+                    <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px', textAlign: 'center' }}>
+                      AI will strictly improve phrasing without inventing facts.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {improvedResume && (
+              <div style={{ background: 'var(--accent-light)', padding: '20px', borderRadius: '8px', border: '1px solid var(--accent-primary)' }}>
+                <h4 style={{ fontSize: '16px', color: 'var(--accent-primary)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Sparkles size={18} /> Optimized Resume Draft
+                </h4>
+                <p style={{ fontSize: '13px', marginBottom: '16px' }}>Your resume has been rewritten to better highlight keywords for this role.</p>
+                
+                <div style={{ background: 'var(--bg-primary)', padding: '16px', borderRadius: '6px', fontSize: '13px', maxHeight: '300px', overflowY: 'auto' }}>
+                  <strong>Improved Experience Descriptions:</strong>
+                  <ul style={{ paddingLeft: '16px', marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {improvedResume.experience?.map((exp, i) => (
+                      <li key={i}>
+                        <em>{exp.role} at {exp.company}</em><br/>
+                        {exp.description}
+                      </li>
+                    ))}
+                  </ul>
+                  
+                  <strong style={{ display: 'block', marginTop: '12px' }}>Improved Project Descriptions:</strong>
+                  <ul style={{ paddingLeft: '16px', marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {improvedResume.projects?.map((proj, i) => (
+                      <li key={i}>
+                        <em>{proj.name}</em><br/>
+                        {proj.description}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
+                  <button className="btn btn-primary" onClick={() => {
+                    const blob = new Blob([JSON.stringify(improvedResume, null, 2)], { type: 'application/json' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `improved-resume-${opportunity.id}.json`;
+                    a.click();
+                  }}>
+                    Download Improved JSON
+                  </button>
+                  <button onClick={() => setImprovedResume(null)} className="btn btn-secondary">
+                    Back to Analysis
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

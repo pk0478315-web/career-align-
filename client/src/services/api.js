@@ -74,6 +74,15 @@ export const api = {
   generateRoadmap: () => apiClient.post('/roadmap/generate'),
   updateRoadmapProgress: (payload) => apiClient.put('/roadmap/progress', payload),
 
+  // Resume Intelligence
+  getResume: () => apiClient.get('/resume'),
+  uploadResume: (formData) => apiClient.post('/resume/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  confirmResume: (payload) => apiClient.put('/resume/confirm', payload),
+  alignResume: (opportunityId) => apiClient.post('/resume/align', { opportunityId }),
+  improveResume: (opportunityId) => apiClient.post('/resume/improve', { opportunityId }),
+
   // Export & Import
   exportData: (format = 'json', scope = 'my-opportunities') => 
     apiClient.get(`/export?format=${format}&scope=${scope}`),

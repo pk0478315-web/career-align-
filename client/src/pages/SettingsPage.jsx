@@ -13,7 +13,8 @@ import {
   FileSpreadsheet,
   Palette,
   Sparkles,
-  Flame
+  Flame,
+  FileText
 } from 'lucide-react';
 
 export const SettingsPage = () => {
@@ -42,6 +43,75 @@ export const SettingsPage = () => {
   const [exporting, setExporting] = useState(false);
   const [importJson, setImportJson] = useState('');
   const [importNotice, setImportNotice] = useState('');
+
+  // Resume states
+  const [uploadingResume, setUploadingResume] = useState(false);
+  const [resumeFile, setResumeFile] = useState(null);
+  const [parsedResume, setParsedResume] = useState(null);
+  const [savedResume, setSavedResume] = useState(null);
+  const [resumeMessage, setResumeMessage] = useState('');
+
+  React.useEffect(() => {
+    fetchSavedResume();
+  }, []);
+
+  const fetchSavedResume = async () => {
+    try {
+      const res = await api.getResume();
+      if (res.success && res.data) {
+        setSavedResume(res.data);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleResumeFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setResumeFile(e.target.files[0]);
+    }
+  };
+
+  const handleUploadResume = async (e) => {
+    e.preventDefault();
+    if (!resumeFile) return;
+    setUploadingResume(true);
+    setResumeMessage('');
+    try {
+      const formData = new FormData();
+      formData.append('resume', resumeFile);
+      const res = await api.uploadResume(formData);
+      if (res.success) {
+        setParsedResume(res.data);
+        setResumeMessage('Resume parsed successfully! Please review and confirm to save.');
+      }
+    } catch (err) {
+      setResumeMessage(err.response?.data?.error || err.message || 'Upload failed');
+    } finally {
+      setUploadingResume(false);
+    }
+  };
+
+  const handleConfirmResume = async () => {
+    if (!parsedResume) return;
+    setUploadingResume(true);
+    try {
+      const res = await api.confirmResume(parsedResume);
+      if (res.success) {
+        setSavedResume(res.data);
+        setParsedResume(null);
+        setResumeFile(null);
+        setResumeMessage('Resume confirmed and saved successfully! Profile updated.');
+        // Refresh profile to show new skills
+        const updatedProfileRes = await api.getProfile();
+        // Ignoring full profile refresh here, the user will see it on refresh or we could context-update
+      }
+    } catch (err) {
+      setResumeMessage('Failed to confirm resume.');
+    } finally {
+      setUploadingResume(false);
+    }
+  };
 
   // Options
   const majorOptions = [
@@ -437,6 +507,71 @@ export const SettingsPage = () => {
             <Check size={16} /> {saving ? 'Saving...' : 'Save Profile Changes'}
           </button>
         </form>
+      </div>
+
+      {/* Resume Intelligence Section */}
+      <div className="card glass-panel" style={{ padding: '28px' }}>
+        <h3 style={{ fontSize: '18px', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <FileText size={20} color="var(--accent-primary)" /> Resume Intelligence
+        </h3>
+        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+          Upload your resume to automatically extract skills, experience, and align it with opportunities.
+        </p>
+
+        {savedResume && !parsedResume && (
+          <div style={{ background: 'var(--bg-tertiary)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)', marginBottom: '20px' }}>
+            <h4 style={{ fontSize: '14px', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Check size={16} color="var(--status-offered)" /> Active Resume: {savedResume.fileName}
+            </h4>
+            <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0 }}>
+              Uploaded on: {new Date(savedResume.updatedAt).toLocaleDateString()}
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '12px' }}>
+              {(savedResume.parsedContent?.skills || []).map((sk, i) => (
+                <span key={i} style={{ background: 'var(--accent-light)', color: 'var(--accent-primary)', padding: '2px 8px', borderRadius: '4px', fontSize: '11px' }}>{sk}</span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {parsedResume ? (
+          <div style={{ background: 'var(--accent-light)', padding: '20px', borderRadius: '8px', border: '1px solid var(--accent-primary)' }}>
+            <h4 style={{ fontSize: '15px', color: 'var(--accent-primary)', marginBottom: '12px' }}>Please Confirm Extracted Data</h4>
+            <div style={{ display: 'grid', gap: '12px', fontSize: '13px' }}>
+              <div>
+                <strong>Skills:</strong> {parsedResume.parsedContent.skills?.join(', ')}
+              </div>
+              <div>
+                <strong>Education:</strong> {parsedResume.parsedContent.education?.map(e => e.institution).join(', ')}
+              </div>
+              <div>
+                <strong>Experience:</strong> {parsedResume.parsedContent.experience?.map(e => e.company).join(', ')}
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
+              <button onClick={handleConfirmResume} className="btn btn-primary" disabled={uploadingResume}>
+                {uploadingResume ? 'Confirming...' : 'Confirm & Save Resume'}
+              </button>
+              <button onClick={() => setParsedResume(null)} className="btn btn-secondary" disabled={uploadingResume}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={handleUploadResume} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <input 
+              type="file" 
+              accept="application/pdf" 
+              onChange={handleResumeFileChange}
+              style={{ fontSize: '14px', padding: '8px', border: '1px dashed var(--border-color)', borderRadius: '8px', cursor: 'pointer' }}
+            />
+            <button type="submit" className="btn btn-secondary" style={{ alignSelf: 'flex-start' }} disabled={uploadingResume || !resumeFile}>
+              <Upload size={16} /> {uploadingResume ? 'Parsing via AI...' : 'Upload & Parse PDF'}
+            </button>
+          </form>
+        )}
+        
+        {resumeMessage && <p style={{ fontSize: '13px', color: 'var(--accent-primary)', marginTop: '12px' }}>{resumeMessage}</p>}
       </div>
 
       {/* Export & Data Portability */}
