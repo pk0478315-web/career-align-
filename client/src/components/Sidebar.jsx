@@ -182,7 +182,11 @@ export const Sidebar = () => {
           {/* User Account Bar */}
           {isAuthenticated ? (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg-tertiary)', padding: '8px 10px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
+              <div 
+                onClick={() => navigate('/settings')}
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden', cursor: 'pointer', flex: 1 }}
+                title="View Profile Settings"
+              >
                 <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--accent-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-primary)', fontWeight: 700, fontSize: '12px', flexShrink: 0 }}>
                   {user?.displayName ? user.displayName.charAt(0).toUpperCase() : 'U'}
                 </div>

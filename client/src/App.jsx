@@ -27,17 +27,10 @@ const ProtectedRoute = ({ children }) => {
 function AppContent() {
   const location = useLocation();
 
-  // App routes that use the Left Sidebar Dashboard layout
-  const isDashboardRoute = [
-    '/dashboard', 
-    '/discover', 
-    '/tracker', 
-    '/ai-copilot', 
-    '/settings', 
-    '/onboarding'
-  ].includes(location.pathname);
+  // Landing & Auth pages use Top Navbar; all other workspace routes use Left Sidebar
+  const isLandingOrAuth = ['/', '/login', '/register'].includes(location.pathname);
 
-  if (isDashboardRoute) {
+  if (!isLandingOrAuth) {
     return (
       <div className="app-layout-sidebar">
         <Sidebar />
