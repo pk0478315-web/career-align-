@@ -1,0 +1,31 @@
+{
+  "name": "student-opportunity-ai-server",
+  "version": "1.0.0",
+  "description": "Express backend for Student Opportunity AI platform",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test:api": "node src/scripts/testEndpoints.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.1",
+    "axios": "^1.8.1",
+    "bcryptjs": "^3.0.2",
+    "cheerio": "^1.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.0"
+  },
+  "keywords": [
+    "hackathon",
+    "student-opportunity",
+    "express",
+    "supabase"
+  ],
+  "author": "Piyush Kumar & Team",
+  "license": "ISC"
+}
