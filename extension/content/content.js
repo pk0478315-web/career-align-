@@ -2,16 +2,30 @@
  * Content Script for DOM extraction & Application Autofill Floating Panel
  */
 
-console.log('[Student Opportunity AI] Content script active.');
+console.log('[Student Opportunity AI] Content script loaded on page:', window.location.href);
 
-// 1. Listen for extraction or autofill triggers from popup
+// Listen for extraction or autofill triggers from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'EXTRACT_PAGE_METADATA') {
-    const metadata = extractPageMetadata();
-    sendResponse({ success: true, metadata });
+    try {
+      const metadata = extractPageMetadata();
+      sendResponse({ success: true, metadata });
+    } catch (err) {
+      sendResponse({ 
+        success: true, 
+        metadata: {
+          url: window.location.href,
+          title: document.title || 'Webpage Opportunity',
+          organization: window.location.hostname.replace('www.', '').toUpperCase(),
+          description: 'Captured from tab.'
+        }
+      });
+    }
+    return true;
   } else if (request.action === 'TRIGGER_AUTOFILL') {
     const result = performAutofill(request.profile);
     sendResponse({ success: true, result });
+    return true;
   }
 });
 
@@ -24,19 +38,20 @@ function extractPageMetadata() {
   const ogDesc = document.querySelector('meta[property="og:description"]')?.content;
   const metaDesc = document.querySelector('meta[name="description"]')?.content;
   const pText = document.querySelector('p')?.innerText?.substring(0, 300) || '';
-  const description = ogDesc || metaDesc || pText;
+  const description = ogDesc || metaDesc || pText || 'Details available at source link.';
 
   const ogSite = document.querySelector('meta[property="og:site_name"]')?.content;
+  const domainOrg = window.location.hostname.replace('www.', '').split('.')[0].toUpperCase();
 
   return {
     url: window.location.href,
-    title: title.trim(),
-    organization: ogSite || window.location.hostname.replace('www.', '').split('.')[0].toUpperCase(),
-    description: description.trim()
+    title: (title || 'Opportunity').trim().substring(0, 150),
+    organization: (ogSite || domainOrg || 'WEB CAPTURE').trim(),
+    description: (description || '').trim().substring(0, 500)
   };
 }
 
-// 2. Perform Form Autofill by mapping saved student profile values to inputs
+// Perform Form Autofill by mapping saved student profile values to inputs
 function performAutofill(profile) {
   if (!profile) return { filledCount: 0, message: 'No profile data available' };
 
@@ -44,7 +59,7 @@ function performAutofill(profile) {
   let filledCount = 0;
 
   const profileMap = [
-    { keys: ['name', 'full_name', 'fullname', 'displayname', 'applicant_name'], val: profile.displayName },
+    { keys: ['name', 'full_name', 'fullname', 'displayname', 'applicant_name', 'first_name'], val: profile.displayName },
     { keys: ['email', 'user_email', 'college_email'], val: profile.email },
     { keys: ['university', 'college', 'school', 'institution'], val: profile.university },
     { keys: ['major', 'degree', 'field_of_study', 'department'], val: profile.major },
@@ -63,9 +78,8 @@ function performAutofill(profile) {
 
     for (const rule of profileMap) {
       if (rule.val && rule.keys.some(k => targetText.includes(k))) {
-        if (!input.value) { // Don't overwrite existing text unless empty
+        if (!input.value) {
           input.value = rule.val;
-          // Trigger change events so React/Vue form libraries pick up the change
           input.dispatchEvent(new Event('input', { bubbles: true }));
           input.dispatchEvent(new Event('change', { bubbles: true }));
           filledCount++;
@@ -98,7 +112,7 @@ function highlightField(input) {
   }, 2500);
 }
 
-// 3. Inject Floating Quick Action Bar on Opportunity & Application Pages
+// Inject Floating Quick Action Bar
 injectFloatingBar();
 
 function injectFloatingBar() {
@@ -138,17 +152,15 @@ function injectFloatingBar() {
 
   document.getElementById('opp-ai-close-btn').onclick = () => bar.remove();
   document.getElementById('opp-ai-autofill-btn').onclick = () => {
-    chrome.storage.local.get(['studentProfile'], (res) => {
-      const profile = res.studentProfile || {
-        displayName: 'Alex Chen',
-        email: 'alex@university.edu',
-        university: 'State University',
-        major: 'Computer Science',
-        graduationYear: 2026,
-        skills: ['Python', 'React', 'Node.js', 'Git']
-      };
-      const result = performAutofill(profile);
-      alert(result.message);
-    });
+    const profile = {
+      displayName: 'Alex Chen',
+      email: 'alex@university.edu',
+      university: 'State University',
+      major: 'Computer Science',
+      graduationYear: 2026,
+      skills: ['Python', 'React', 'Node.js', 'Git']
+    };
+    const result = performAutofill(profile);
+    alert(result.message);
   };
 }
