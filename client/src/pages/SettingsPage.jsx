@@ -10,11 +10,14 @@ import {
   Sun, 
   Check, 
   ShieldCheck, 
-  FileSpreadsheet 
+  FileSpreadsheet,
+  Palette,
+  Sparkles,
+  Flame
 } from 'lucide-react';
 
 export const SettingsPage = () => {
-  const { user, profile, updateUserProfile, theme, toggleTheme } = useAuth();
+  const { user, profile, updateUserProfile, theme, selectTheme, toggleTheme, themes } = useAuth();
 
   const [displayName, setDisplayName] = useState(profile?.displayName || user?.displayName || '');
   const [university, setUniversity] = useState(profile?.university || '');
@@ -164,17 +167,172 @@ export const SettingsPage = () => {
   return (
     <div style={{ maxWidth: '820px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '28px' }}>
       
-      <div className="glass-panel" style={{ padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div className="glass-panel" style={{ padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
         <div>
           <h1 style={{ fontSize: '26px', fontWeight: '800' }}>Settings & Profile Preferences</h1>
           <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-            Manage profile settings, skills selection, theme, and data export.
+            Manage profile settings, technical skills, visual theme palette, and data backups.
           </p>
         </div>
 
-        <button onClick={toggleTheme} className="btn btn-secondary">
-          {theme === 'light' ? <><Moon size={16} /> Dark Mode</> : <><Sun size={16} /> Light Mode</>}
+        <button onClick={toggleTheme} className="btn btn-secondary" title="Cycle through all 4 themes">
+          <Palette size={16} /> Cycle Theme
         </button>
+      </div>
+
+      {/* Visual Theme Customizer Section */}
+      <div className="card glass-panel" style={{ padding: '28px' }}>
+        <div style={{ marginBottom: '20px' }}>
+          <h3 style={{ fontSize: '18px', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+            <Palette size={20} color="var(--accent-primary)" /> Workspace Appearance & Themes
+          </h3>
+          <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+            Choose a theme that suits your work style. Switches fonts, contrast, gradients, and glows in real time.
+          </p>
+        </div>
+
+        <div className="grid-cols-2" style={{ gap: '16px' }}>
+          {(themes || []).map((t) => {
+            const isSelected = theme === t.id;
+            return (
+              <div
+                key={t.id}
+                onClick={() => selectTheme(t.id)}
+                style={{
+                  background: t.cardBg,
+                  borderRadius: '14px',
+                  border: isSelected ? `2.5px solid ${t.color}` : '1.5px solid var(--border-color)',
+                  padding: '18px',
+                  cursor: 'pointer',
+                  position: 'relative',
+                  boxShadow: isSelected ? `0 0 20px ${t.color}40` : 'var(--shadow-sm)',
+                  transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px'
+                }}
+              >
+                {/* Header with Title and Status */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div 
+                      style={{ 
+                        width: '28px', 
+                        height: '28px', 
+                        borderRadius: '8px', 
+                        background: t.bg,
+                        border: `1.5px solid ${t.color}`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: t.color }} />
+                    </div>
+                    <div>
+                      <h4 style={{ fontSize: '15px', fontWeight: 700, margin: 0, color: t.id === 'light' ? '#0f172a' : '#f8fafc' }}>
+                        {t.name}
+                      </h4>
+                      <span style={{ fontSize: '11px', color: t.id === 'light' ? '#64748b' : '#94a3b8' }}>
+                        {t.tagline}
+                      </span>
+                    </div>
+                  </div>
+
+                  {isSelected ? (
+                    <span 
+                      style={{ 
+                        background: t.color, 
+                        color: '#ffffff', 
+                        fontSize: '11px', 
+                        fontWeight: 700, 
+                        padding: '4px 8px', 
+                        borderRadius: '9999px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                    >
+                      <Check size={12} /> Active
+                    </span>
+                  ) : (
+                    <span 
+                      style={{ 
+                        fontSize: '11px', 
+                        color: t.id === 'light' ? '#94a3b8' : '#64748b',
+                        fontWeight: 600
+                      }}
+                    >
+                      Select
+                    </span>
+                  )}
+                </div>
+
+                {/* Theme Miniature Preview Box */}
+                <div 
+                  style={{ 
+                    background: t.bg, 
+                    borderRadius: '8px', 
+                    padding: '10px', 
+                    border: `1px solid ${t.id === 'light' ? '#e2e8f0' : 'rgba(255,255,255,0.08)'}`,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '6px'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 600, color: t.id === 'light' ? '#0f172a' : '#f8fafc' }}>
+                      Opportunity Preview
+                    </span>
+                    <span 
+                      style={{ 
+                        fontSize: '9px', 
+                        fontWeight: 700, 
+                        padding: '2px 6px', 
+                        borderRadius: '4px',
+                        background: `${t.color}25`,
+                        color: t.color
+                      }}
+                    >
+                      MATCH 98%
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                    <div 
+                      style={{ 
+                        height: '6px', 
+                        borderRadius: '3px', 
+                        flex: 1, 
+                        background: `${t.color}50` 
+                      }} 
+                    />
+                    <div 
+                      style={{ 
+                        height: '6px', 
+                        width: '24px', 
+                        borderRadius: '3px', 
+                        background: t.secondaryColor 
+                      }} 
+                    />
+                  </div>
+                </div>
+
+                {/* Color Swatch Indicators & Description */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '4px' }}>
+                  <p style={{ fontSize: '12px', color: t.id === 'light' ? '#475569' : '#cbd5e1', margin: 0, flex: 1, paddingRight: '8px' }}>
+                    {t.description}
+                  </p>
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: t.color, display: 'inline-block' }} title="Accent" />
+                    <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: t.secondaryColor, display: 'inline-block' }} title="Secondary" />
+                    <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: t.bg, border: '1px solid #777', display: 'inline-block' }} title="Background" />
+                  </div>
+                </div>
+
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {message && (

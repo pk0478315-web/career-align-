@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
@@ -6,8 +6,8 @@ import {
   BookmarkCheck, 
   Bot, 
   Settings, 
-  Moon, 
-  Sun, 
+  Palette,
+  Check,
   LogOut, 
   LogIn,
   Menu,
@@ -15,12 +15,31 @@ import {
 } from 'lucide-react';
 
 export const Navbar = () => {
-  const { user, isAuthenticated, logout, theme, toggleTheme } = useAuth();
+  const { user, isAuthenticated, logout, theme, selectTheme, themes } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [themeDropdownOpen, setThemeDropdownOpen] = useState(false);
+  const themeDropdownRef = useRef(null);
 
   const isActive = (path) => location.pathname === path;
+
+  const currentThemeObj = (themes || []).find(t => t.id === theme) || themes?.[0];
+
+  // Close theme popover when clicking outside
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (themeDropdownRef.current && !themeDropdownRef.current.contains(e.target)) {
+        setThemeDropdownOpen(false);
+      }
+    };
+    if (themeDropdownOpen) {
+      document.addEventListener('mousedown', handleOutsideClick);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+    };
+  }, [themeDropdownOpen]);
 
   return (
     <header className="glass-panel" style={{ borderRadius: 0, borderTop: 0, borderLeft: 0, borderRight: 0, position: 'sticky', top: 0, zIndex: 50 }}>
@@ -35,7 +54,7 @@ export const Navbar = () => {
           />
           <div>
             <span style={{ fontFamily: 'var(--font-heading)', fontSize: '20px', fontWeight: '800', color: 'var(--text-primary)', display: 'block', lineHeight: 1, letterSpacing: '-0.02em' }}>
-              Career<span style={{ color: '#0284c7' }}>Align</span>
+              Career<span style={{ color: 'var(--accent-primary)', transition: 'color 0.3s ease' }}>Align</span>
             </span>
             <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '700', letterSpacing: '0.06em' }}>OPPORTUNITY INTELLIGENCE</span>
           </div>
@@ -59,9 +78,103 @@ export const Navbar = () => {
 
         {/* Right Actions */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button onClick={toggleTheme} className="btn btn-secondary btn-sm" title="Toggle Light/Dark Theme" style={{ padding: '8px', borderRadius: '50%' }}>
-            {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
-          </button>
+          
+          {/* Multi-Theme Selector Popover */}
+          <div style={{ position: 'relative' }} ref={themeDropdownRef}>
+            <button 
+              onClick={() => setThemeDropdownOpen(!themeDropdownOpen)} 
+              className="btn btn-secondary btn-sm" 
+              title="Select App Theme"
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 12px', borderRadius: '9999px' }}
+            >
+              <span 
+                style={{ 
+                  width: '12px', 
+                  height: '12px', 
+                  borderRadius: '50%', 
+                  background: currentThemeObj?.color || 'var(--accent-primary)',
+                  boxShadow: `0 0 8px ${currentThemeObj?.color || 'var(--accent-primary)'}`
+                }} 
+              />
+              <span className="desktop-nav" style={{ fontSize: '13px', fontWeight: 600 }}>
+                {currentThemeObj?.name || 'Theme'}
+              </span>
+              <Palette size={15} style={{ opacity: 0.8 }} />
+            </button>
+
+            {themeDropdownOpen && (
+              <div 
+                className="glass-panel" 
+                style={{ 
+                  position: 'absolute', 
+                  top: 'calc(100% + 8px)', 
+                  right: 0, 
+                  width: '250px', 
+                  padding: '8px', 
+                  borderRadius: '14px',
+                  boxShadow: 'var(--shadow-lg)',
+                  zIndex: 100,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '4px',
+                  animation: 'fadeIn 0.2s ease'
+                }}
+              >
+                <div style={{ padding: '6px 10px', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  Workspace Theme
+                </div>
+                {(themes || []).map((t) => {
+                  const isSelected = theme === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => {
+                        selectTheme(t.id);
+                        setThemeDropdownOpen(false);
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '8px 10px',
+                        borderRadius: '10px',
+                        border: isSelected ? `1.5px solid ${t.color}` : '1.5px solid transparent',
+                        background: isSelected ? 'var(--accent-light)' : 'transparent',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        transition: 'all 0.15s ease',
+                        width: '100%',
+                        color: 'var(--text-primary)'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div 
+                          style={{ 
+                            width: '22px', 
+                            height: '22px', 
+                            borderRadius: '50%', 
+                            background: t.bg,
+                            border: `2px solid ${t.color}`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0
+                          }} 
+                        >
+                          <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: t.color }} />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '13px', fontWeight: 600 }}>{t.name}</div>
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{t.tagline}</div>
+                        </div>
+                      </div>
+                      {isSelected && <Check size={16} color={t.color} />}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
 
           {isAuthenticated ? (
             <div className="desktop-nav" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -127,6 +240,41 @@ export const Navbar = () => {
               <Link to="/register" onClick={() => setMobileMenuOpen(false)} className="btn btn-primary" style={{ flex: 1 }}>Get Started</Link>
             </div>
           )}
+
+          {/* Mobile Theme Switcher */}
+          <div style={{ marginTop: '10px', paddingTop: '12px', borderTop: '1px solid var(--border-color)' }}>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '0.05em' }}>
+              Select Theme
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+              {(themes || []).map((t) => {
+                const isSelected = theme === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => {
+                      selectTheme(t.id);
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`btn btn-sm ${isSelected ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{ justifyContent: 'flex-start', gap: '8px', padding: '8px 10px', fontSize: '12px', borderRadius: '8px' }}
+                  >
+                    <span 
+                      style={{ 
+                        width: '10px', 
+                        height: '10px', 
+                        borderRadius: '50%', 
+                        background: t.color, 
+                        flexShrink: 0,
+                        boxShadow: `0 0 4px ${t.color}` 
+                      }} 
+                    />
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
 

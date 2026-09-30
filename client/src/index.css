@@ -1,10 +1,10 @@
-/* Student Opportunity AI — Design System & Animations */
+/* CareerAlign — Design System & Multi-Theme Engine */
 
-:root {
+:root, [data-theme="light"] {
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   --font-heading: 'Outfit', 'Inter', system-ui, sans-serif;
 
-  /* Color Palette - Light Mode */
+  /* Theme 1: Clean Light */
   --bg-primary: #f8fafc;
   --bg-secondary: #ffffff;
   --bg-tertiary: #f1f5f9;
@@ -14,16 +14,16 @@
   --text-secondary: #475569;
   --text-muted: #94a3b8;
 
-  --accent-primary: #4f46e5;      /* Indigo */
-  --accent-primary-hover: #4338ca;
+  --accent-primary: #0284c7;      /* Sky Blue */
+  --accent-primary-hover: #0369a1;
   --accent-secondary: #0d9488;    /* Teal */
-  --accent-light: #e0e7ff;
+  --accent-light: #e0f2fe;
   --accent-teal-light: #ccfbf1;
 
   --border-color: #e2e8f0;
   --border-hover: #cbd5e1;
 
-  --status-saved: #3b82f6;
+  --status-saved: #0284c7;
   --status-applied: #8b5cf6;
   --status-interview: #f59e0b;
   --status-offered: #10b981;
@@ -32,7 +32,7 @@
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   --shadow-lg: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --shadow-glow: 0 0 25px rgba(79, 70, 229, 0.25);
+  --shadow-glow: 0 0 25px rgba(2, 132, 199, 0.25);
 
   --radius-sm: 6px;
   --radius-md: 10px;
@@ -40,6 +40,7 @@
   --radius-xl: 24px;
 }
 
+/* Theme 2: Midnight Dark */
 [data-theme="dark"] {
   --bg-primary: #0f172a;
   --bg-secondary: #1e293b;
@@ -50,16 +51,62 @@
   --text-secondary: #cbd5e1;
   --text-muted: #64748b;
 
-  --accent-primary: #6366f1;
-  --accent-primary-hover: #4f46e5;
-  --accent-secondary: #14b8a6;
-  --accent-light: rgba(99, 102, 241, 0.2);
-  --accent-teal-light: rgba(20, 184, 166, 0.2);
+  --accent-primary: #38bdf8;
+  --accent-primary-hover: #0ea5e9;
+  --accent-secondary: #2dd4bf;
+  --accent-light: rgba(56, 189, 248, 0.18);
+  --accent-teal-light: rgba(45, 212, 191, 0.18);
 
   --border-color: #334155;
   --border-hover: #475569;
 
-  --shadow-glow: 0 0 30px rgba(99, 102, 241, 0.35);
+  --shadow-glow: 0 0 30px rgba(56, 189, 248, 0.35);
+}
+
+/* Theme 3: Emerald Forest (Nature & Focus) */
+[data-theme="emerald"] {
+  --bg-primary: #051b16;
+  --bg-secondary: #0b2b23;
+  --bg-tertiary: #133f34;
+  --bg-glass: rgba(11, 43, 35, 0.85);
+
+  --text-primary: #ecfdf5;
+  --text-secondary: #a7f3d0;
+  --text-muted: #6ee7b7;
+
+  --accent-primary: #10b981;
+  --accent-primary-hover: #059669;
+  --accent-secondary: #34d399;
+  --accent-light: rgba(16, 185, 129, 0.2);
+  --accent-teal-light: rgba(52, 211, 153, 0.2);
+
+  --border-color: #194e41;
+  --border-hover: #26715f;
+
+  --shadow-glow: 0 0 30px rgba(16, 185, 129, 0.4);
+}
+
+/* Theme 4: Sunset Aurora (Cosmic Violet & Pink) */
+[data-theme="sunset"] {
+  --bg-primary: #130a24;
+  --bg-secondary: #20113b;
+  --bg-tertiary: #301957;
+  --bg-glass: rgba(32, 17, 59, 0.85);
+
+  --text-primary: #fdf2f8;
+  --text-secondary: #fbcfe8;
+  --text-muted: #f472b6;
+
+  --accent-primary: #ec4899;
+  --accent-primary-hover: #db2777;
+  --accent-secondary: #a855f7;
+  --accent-light: rgba(236, 72, 153, 0.2);
+  --accent-teal-light: rgba(168, 85, 247, 0.2);
+
+  --border-color: #422375;
+  --border-hover: #5d31a6;
+
+  --shadow-glow: 0 0 30px rgba(236, 72, 153, 0.4);
 }
 
 * {
@@ -75,7 +122,7 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
-  transition: background-color 0.25s ease, color 0.25s ease;
+  transition: background-color 0.3s ease, color 0.3s ease;
   overflow-x: hidden;
 }
 
@@ -127,8 +174,8 @@ a:hover {
 /* Glassmorphism Panel */
 .glass-panel {
   background: var(--bg-glass);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
@@ -167,14 +214,14 @@ a:hover {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--accent-primary), #6366f1);
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
   color: #ffffff;
-  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.25);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
 }
 
 .btn-primary:hover {
-  background: linear-gradient(135deg, var(--accent-primary-hover), var(--accent-primary));
-  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
+  opacity: 0.95;
+  box-shadow: 0 6px 20px var(--shadow-glow);
   transform: translateY(-1px);
 }
 
@@ -185,7 +232,7 @@ a:hover {
 }
 
 .btn-secondary:hover {
-  background-color: var(--border-color);
+  background-color: var(--border-hover);
   transform: translateY(-1px);
 }
 
@@ -254,19 +301,41 @@ a:hover {
   text-transform: capitalize;
 }
 
-.badge-scholarship { background: #e0f2fe; color: #0369a1; }
-.badge-internship { background: #f0fdf4; color: #15803d; }
+.badge-scholarship { background: var(--accent-light); color: var(--accent-primary); }
+.badge-internship { background: var(--accent-teal-light); color: var(--accent-secondary); }
 .badge-hackathon { background: #fef3c7; color: #b45309; }
 .badge-fellowship { background: #fae8ff; color: #86198f; }
-.badge-research { background: #f1f5f9; color: #475569; }
+.badge-research { background: var(--bg-tertiary); color: var(--text-secondary); }
 .badge-competition { background: #ffe4e6; color: #be123c; }
+
+/* Darker theme badge contrast enhancements */
+[data-theme="dark"] .badge-hackathon,
+[data-theme="emerald"] .badge-hackathon,
+[data-theme="sunset"] .badge-hackathon {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+}
+
+[data-theme="dark"] .badge-fellowship,
+[data-theme="emerald"] .badge-fellowship,
+[data-theme="sunset"] .badge-fellowship {
+  background: rgba(168, 85, 247, 0.2);
+  color: #c084fc;
+}
+
+[data-theme="dark"] .badge-competition,
+[data-theme="emerald"] .badge-competition,
+[data-theme="sunset"] .badge-competition {
+  background: rgba(244, 63, 94, 0.2);
+  color: #fb7185;
+}
 
 /* Modal Overlay */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(6px);
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -295,8 +364,8 @@ a:hover {
 }
 
 @keyframes pulseGlow {
-  0%, 100% { opacity: 0.8; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.04); box-shadow: 0 0 25px var(--accent-primary); }
+  0%, 100% { opacity: 0.85; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.03); box-shadow: 0 0 25px var(--accent-primary); }
 }
 
 @keyframes floatAnim {
@@ -309,7 +378,6 @@ a:hover {
   100% { background-position: 200% 0; }
 }
 
-/* Animated Classes */
 .animate-float {
   animation: floatAnim 4s ease-in-out infinite;
 }
@@ -319,7 +387,7 @@ a:hover {
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, #4f46e5, #0d9488, #8b5cf6, #ec4899);
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary), #ec4899);
   background-size: 300% 300%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
