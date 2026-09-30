@@ -37,8 +37,10 @@ const computeMatchExplanation = (opportunity, profile) => {
 
 const listOpportunities = async (req, res, next) => {
   try {
-    const { search, category, remote, sort } = req.query;
-    const opportunities = await dbStore.getOpportunities({ search, category, remote, sort });
+    const { search, category, skills, location, remote, deadline, organization, freshness, sort } = req.query;
+    const opportunities = await dbStore.getOpportunities({ 
+      search, category, skills, location, remote, deadline, organization, freshness, sort 
+    });
 
     let studentProfile = null;
     if (req.user) {
@@ -97,31 +99,47 @@ const createOpportunity = async (req, res, next) => {
       isRemote,
       requirements,
       skillsRequired,
-      fundingCompensation
+      fundingCompensation,
+      eligibility,
+      educationRequirements,
+      experienceRequirements,
+      sourceName,
+      postedDate,
+      extractionStatus
     } = req.body;
 
     if (!title || !organization) {
       return sendError(res, 'Title and organization are required', 400, 'VALIDATION_ERROR');
     }
 
-    const newOpp = await dbStore.createOpportunity({
+    const { processOpportunity } = require('../services/opportunityPipeline');
+    
+    const result = await processOpportunity({
       title,
       organization,
-      category: category || 'other',
-      description: description || `Captured from ${sourceUrl || 'extension'}`,
-      sourceUrl: sourceUrl || '',
-      applicationUrl: applicationUrl || sourceUrl || '',
-      deadline: deadline || null,
-      location: location || (isRemote ? 'Remote' : 'Location Not Specified'),
-      isRemote: isRemote !== undefined ? Boolean(isRemote) : true,
-      requirements: Array.isArray(requirements) ? requirements : [],
-      skillsRequired: Array.isArray(skillsRequired) ? skillsRequired : [],
-      fundingCompensation: fundingCompensation || 'Not specified',
+      category,
+      description,
+      sourceUrl,
+      applicationUrl,
+      deadline,
+      location,
+      isRemote,
+      requirements,
+      skillsRequired,
+      fundingCompensation,
+      eligibility,
+      educationRequirements,
+      experienceRequirements,
+      sourceName,
+      postedDate,
+      extractionStatus,
       sourceType: 'captured'
     });
 
+    const newOpp = result.opportunity;
+
     // If student is authenticated, automatically track in "My Opportunities" pipeline!
-    if (req.user) {
+    if (req.user && result.status !== 'duplicate') {
       await dbStore.trackOpportunity(req.user.id, {
         opportunityId: newOpp.id,
         status: 'saved',
@@ -129,7 +147,8 @@ const createOpportunity = async (req, res, next) => {
       });
     }
 
-    return sendSuccess(res, newOpp, 201);
+    // Whether it was created or found as duplicate, return the opportunity
+    return sendSuccess(res, newOpp, result.status === 'created' ? 201 : 200);
   } catch (err) {
     next(err);
   }
