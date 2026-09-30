@@ -56,21 +56,21 @@ export const LandingPage = () => {
       <section style={{ textAlign: 'center', paddingTop: '48px', paddingBottom: '24px', maxWidth: '900px', margin: '0 auto' }}>
         
         {/* Glowing Badge Hook */}
-        <div className="animate-float" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'var(--accent-light)', color: 'var(--accent-primary)', padding: '8px 18px', borderRadius: '9999px', fontSize: '13px', fontWeight: '700', marginBottom: '24px', border: '1px solid rgba(79, 70, 229, 0.3)' }}>
+        <div className="animate-float animate-fade-in-up" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'var(--accent-light)', color: 'var(--accent-primary)', padding: '8px 18px', borderRadius: '9999px', fontSize: '13px', fontWeight: '700', marginBottom: '24px', border: '1px solid rgba(79, 70, 229, 0.3)' }}>
           <Sparkles size={16} className="animate-pulse-glow" /> 
           <span>8 Live Scholarships, Internships & Grants Matched Today</span>
         </div>
 
-        <h1 style={{ fontSize: '52px', fontWeight: '800', lineHeight: '1.15', marginBottom: '24px' }}>
+        <h1 className="animate-fade-in-up delay-100" style={{ fontSize: '52px', fontWeight: '800', lineHeight: '1.15', marginBottom: '24px' }}>
           Stop Searching Endless Websites.<br />
           <span className="gradient-text">Discover & Apply</span> with Intelligence.
         </h1>
 
-        <p style={{ fontSize: '19px', color: 'var(--text-secondary)', lineHeight: '1.6', marginBottom: '36px', maxWidth: '780px', margin: '0 auto 36px auto' }}>
+        <p className="animate-fade-in-up delay-200" style={{ fontSize: '19px', color: 'var(--text-secondary)', lineHeight: '1.6', marginBottom: '36px', maxWidth: '780px', margin: '0 auto 36px auto' }}>
           Scholarships, internships, research fellowships, and hackathons aggregated in one coherent platform — featuring grounded AI eligibility checks and direct application tracking.
         </p>
 
-        <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
+        <div className="animate-fade-in-up delay-300" style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
           <Link to="/register" className="btn btn-primary btn-lg animate-pulse-glow">
             Get Started Free <ArrowRight size={20} />
           </Link>
@@ -82,7 +82,7 @@ export const LandingPage = () => {
       </section>
 
       {/* INTERACTIVE DEMO HOOK WIDGET FOR JUDGES */}
-      <section className="card glass-panel" style={{ padding: '32px', border: '2px solid var(--accent-primary)', boxShadow: 'var(--shadow-glow)' }}>
+      <section className="card glass-panel animate-fade-in-up delay-400" style={{ padding: '32px', border: '2px solid var(--accent-primary)', boxShadow: 'var(--shadow-glow)' }}>
         
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', marginBottom: '24px' }}>
           <div>

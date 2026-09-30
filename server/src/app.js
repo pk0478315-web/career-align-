@@ -30,9 +30,12 @@ const rateLimit = require('express-rate-limit');
 // Middleware
 app.use(helmet());
 
-// Restrict CORS to specific origins in production
+// Restrict CORS to specific origins in production, but be flexible if CLIENT_URL is not set
+const allowedOrigins = ['http://localhost:3000', 'http://localhost:5173', 'http://127.0.0.1:5173'];
+if (env.CLIENT_URL) allowedOrigins.push(env.CLIENT_URL);
+
 const corsOptions = {
-  origin: env.NODE_ENV === 'production' ? (env.CLIENT_URL || 'https://your-production-url.com') : ['http://localhost:3000', 'http://localhost:5173'],
+  origin: env.NODE_ENV === 'production' && env.CLIENT_URL ? env.CLIENT_URL : '*',
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-payment-signature']
 };
