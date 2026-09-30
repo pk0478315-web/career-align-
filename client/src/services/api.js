@@ -67,6 +67,11 @@ export const api = {
   checkEligibility: (opportunityId) => apiClient.post('/ai/eligibility-check', { opportunityId }),
   generateChecklist: (opportunityId) => apiClient.post('/ai/checklist', { opportunityId }),
   copilotChat: (payload) => apiClient.post('/ai/chat', payload),
+  getConversations: () => apiClient.get('/ai/conversations'),
+  createConversation: (payload) => apiClient.post('/ai/conversations', payload),
+  getConversation: (id) => apiClient.get(`/ai/conversations/${id}`),
+  deleteConversation: (id) => apiClient.delete(`/ai/conversations/${id}`),
+  sendMessage: (id, payload) => apiClient.post(`/ai/conversations/${id}/messages`, payload),
   alignCareer: (opportunityId) => apiClient.post('/ai/align', { opportunityId }),
 
   // Career Roadmap

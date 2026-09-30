@@ -1,72 +1,156 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { 
-  Bot, 
-  Sparkles, 
-  Send, 
-  ListChecks, 
-  ShieldCheck, 
-  Building2, 
-  MessageSquare 
+  Bot, Sparkles, Send, Building2, Plus, MessageSquare, Trash2, ShieldCheck, ListChecks
 } from 'lucide-react';
 
 export const AiAssistantPage = () => {
   const { user } = useAuth();
   const [opportunities, setOpportunities] = useState([]);
+  const [conversations, setConversations] = useState([]);
+  const [selectedConvId, setSelectedConvId] = useState(null);
+  
+  // UI states
   const [selectedOppId, setSelectedOppId] = useState('');
   const [question, setQuestion] = useState('');
-  const [messages, setMessages] = useState([
-    {
-      sender: 'bot',
-      text: 'Hello! I am your AI Opportunity Copilot. Select an opportunity or ask me any question about eligibility, requirements, or application checklists.',
-      source: 'grounded-engine'
-    }
-  ]);
+  const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  
+  const messagesEndRef = useRef(null);
 
+  // Initial load
   useEffect(() => {
-    const loadOpps = async () => {
+    const loadData = async () => {
       try {
-        const res = await api.listOpportunities();
-        if (res.success) {
-          setOpportunities(res.data.items);
-          if (res.data.items.length > 0) {
-            setSelectedOppId(res.data.items[0].id);
-          }
+        const [oppsRes, convsRes] = await Promise.all([
+          api.listOpportunities(),
+          api.getConversations()
+        ]);
+        
+        if (oppsRes.success) {
+          setOpportunities(oppsRes.data.items);
+        }
+        
+        if (convsRes.success && convsRes.data.length > 0) {
+          setConversations(convsRes.data);
+          loadConversation(convsRes.data[0].id);
+        } else {
+          // Create an initial new conversation if none exists
+          handleNewConversation();
         }
       } catch (err) {
-        console.error('Failed to load opportunities:', err);
+        console.error('Failed to load initial data:', err);
       }
     };
-    loadOpps();
+    loadData();
   }, []);
 
-  const handleSendQuestion = async (e) => {
-    e.preventDefault();
-    if (!question.trim()) return;
+  const loadConversation = async (convId) => {
+    setLoading(true);
+    setError('');
+    setSelectedConvId(convId);
+    try {
+      const res = await api.getConversation(convId);
+      if (res.success) {
+        const conv = res.data;
+        setSelectedOppId(conv.opportunityId || '');
+        const formattedMsgs = conv.messages.map(m => ({
+          sender: m.role === 'user' ? 'user' : 'bot',
+          text: m.content,
+          source: m.role === 'assistant' ? 'ai-engine' : null
+        }));
+        
+        if (formattedMsgs.length === 0) {
+          formattedMsgs.push({
+            sender: 'bot',
+            text: 'Hello! I am your AI Opportunity Copilot. How can I help you today?',
+            source: 'system'
+          });
+        }
+        setMessages(formattedMsgs);
+      }
+    } catch (err) {
+      console.error('Failed to load conversation:', err);
+      setError('Could not load conversation history.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const userMsg = { sender: 'user', text: question };
+  const handleNewConversation = async () => {
+    setLoading(true);
+    try {
+      const res = await api.createConversation({ title: 'New Conversation', opportunityId: selectedOppId || null });
+      if (res.success) {
+        setConversations(prev => [res.data, ...prev]);
+        setSelectedConvId(res.data.id);
+        setMessages([{
+          sender: 'bot',
+          text: 'Hello! I am your AI Opportunity Copilot. What would you like to discuss?',
+          source: 'system'
+        }]);
+      }
+    } catch (err) {
+      setError('Failed to create a new conversation.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteConversation = async (convId, e) => {
+    e.stopPropagation();
+    try {
+      await api.deleteConversation(convId);
+      const updated = conversations.filter(c => c.id !== convId);
+      setConversations(updated);
+      if (selectedConvId === convId) {
+        if (updated.length > 0) {
+          loadConversation(updated[0].id);
+        } else {
+          handleNewConversation();
+        }
+      }
+    } catch (err) {
+      console.error('Failed to delete conversation:', err);
+    }
+  };
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, loading]);
+
+  const handleSendQuestion = async (e, textOverride = null) => {
+    if (e) e.preventDefault();
+    const content = textOverride || question;
+    if (!content.trim() || !selectedConvId) return;
+
+    const userMsg = { sender: 'user', text: content };
     setMessages(prev => [...prev, userMsg]);
-    const currentQ = question;
     setQuestion('');
     setLoading(true);
+    setError('');
 
     try {
-      const res = await api.copilotChat({
-        opportunityId: selectedOppId || null,
-        question: currentQ
-      });
-
+      const res = await api.sendMessage(selectedConvId, { content });
       if (res.success) {
         setMessages(prev => [
           ...prev,
           {
             sender: 'bot',
-            text: res.data.answer,
-            source: res.data.source || 'grounded-engine'
+            text: res.data.content,
+            source: 'grounded-engine'
           }
         ]);
+        
+        // Refresh conversation list to update titles/timestamps if needed
+        const convsRes = await api.getConversations();
+        if (convsRes.success) setConversations(convsRes.data);
       }
     } catch (err) {
       setMessages(prev => [
@@ -86,114 +170,156 @@ export const AiAssistantPage = () => {
     if (!selectedOppId) return;
     setLoading(true);
     try {
-      if (actionType === 'eligibility') {
-        const res = await api.checkEligibility(selectedOppId);
-        if (res.success) {
-          const summaryText = `Overall Eligibility Assessment: ${res.data.overallStatus.toUpperCase()}\n\nFactors:\n` +
-            res.data.factors.map(f => `• ${f.criterion}: ${f.assessment} (${f.detail})`).join('\n');
-          setMessages(prev => [...prev, { sender: 'user', text: 'Check my eligibility for this opportunity' }, { sender: 'bot', text: summaryText, source: 'ai-engine' }]);
-        }
-      } else if (actionType === 'checklist') {
-        const res = await api.generateChecklist(selectedOppId);
-        if (res.success) {
-          const listText = `Recommended Action & Document Checklist:\n\n` +
-            res.data.checklist.map(item => `[ ] ${item.item}`).join('\n');
-          setMessages(prev => [...prev, { sender: 'user', text: 'Generate document checklist' }, { sender: 'bot', text: listText, source: 'ai-engine' }]);
-        }
-      }
+      let prompt = '';
+      if (actionType === 'eligibility') prompt = 'Check my eligibility for this opportunity based on my profile.';
+      if (actionType === 'checklist') prompt = 'Generate a detailed document and action checklist for this application.';
+      await handleSendQuestion(null, prompt);
     } catch (err) {
       console.error('Action failed:', err);
-    } finally {
-      setLoading(false);
     }
   };
 
   return (
-    <div style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div style={{ display: 'flex', gap: '24px', height: 'calc(100vh - 120px)' }}>
       
-      {/* Header */}
-      <div className="glass-panel" style={{ padding: '24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-          <div style={{ background: 'var(--accent-light)', padding: '10px', borderRadius: '12px', display: 'flex' }}>
-            <Bot size={24} color="var(--accent-primary)" />
-          </div>
-          <div>
-            <h1 style={{ fontSize: '24px', fontWeight: '800' }}>AI Opportunity Copilot</h1>
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-              Context-aware Q&A, eligibility gap analysis, and checklist generation.
-            </p>
-          </div>
+      {/* Sidebar: Conversations List */}
+      <div className="card" style={{ width: '280px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div style={{ padding: '16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h2 style={{ fontSize: '16px', fontWeight: '700' }}>Chat History</h2>
+          <button onClick={handleNewConversation} className="btn btn-primary btn-sm" style={{ padding: '6px' }} title="New Chat">
+            <Plus size={16} />
+          </button>
         </div>
-
-        {/* Opportunity Target Selector */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '16px', background: 'var(--bg-tertiary)', padding: '10px 14px', borderRadius: 'var(--radius-md)' }}>
-          <Building2 size={18} color="var(--text-muted)" />
-          <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-secondary)' }}>Focus Opportunity:</span>
-          <select 
-            className="form-select" 
-            value={selectedOppId} 
-            onChange={(e) => setSelectedOppId(e.target.value)}
-            style={{ flex: 1 }}
-          >
-            {opportunities.map(o => (
-              <option key={o.id} value={o.id}>{o.organization} — {o.title}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* Quick Prompt Chips */}
-      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-        <button onClick={() => handleQuickAction('eligibility')} className="btn btn-secondary btn-sm" disabled={loading}>
-          <ShieldCheck size={16} color="var(--accent-primary)" /> Check My Eligibility
-        </button>
-        <button onClick={() => handleQuickAction('checklist')} className="btn btn-secondary btn-sm" disabled={loading}>
-          <ListChecks size={16} color="var(--accent-secondary)" /> Generate Document Checklist
-        </button>
-      </div>
-
-      {/* Chat Messages Box */}
-      <div className="card" style={{ minHeight: '380px', maxHeight: '520px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px', padding: '24px' }}>
-        {messages.map((msg, idx) => (
-          <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: msg.sender === 'user' ? 'flex-end' : 'flex-start' }}>
-            <div style={{
-              maxWidth: '80%',
-              padding: '12px 16px',
-              borderRadius: '16px',
-              background: msg.sender === 'user' ? 'var(--accent-primary)' : 'var(--bg-tertiary)',
-              color: msg.sender === 'user' ? '#ffffff' : 'var(--text-primary)',
-              fontSize: '14px',
-              lineHeight: '1.5',
-              whiteSpace: 'pre-line'
-            }}>
-              {msg.text}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '12px' }}>
+          {conversations.map(conv => (
+            <div 
+              key={conv.id}
+              onClick={() => loadConversation(conv.id)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '12px',
+                borderRadius: '8px',
+                marginBottom: '8px',
+                cursor: 'pointer',
+                background: selectedConvId === conv.id ? 'var(--bg-tertiary)' : 'transparent',
+                border: selectedConvId === conv.id ? '1px solid var(--accent-light)' : '1px solid transparent',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
+                <MessageSquare size={16} color="var(--text-muted)" />
+                <span style={{ fontSize: '13px', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                  {conv.title}
+                </span>
+              </div>
+              <button 
+                onClick={(e) => handleDeleteConversation(conv.id, e)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.5 }}
+                title="Delete"
+              >
+                <Trash2 size={14} color="var(--error-color)" />
+              </button>
             </div>
-
-            {msg.sender === 'bot' && (
-              <span style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <Sparkles size={12} /> Grounded Output ({msg.source})
-              </span>
-            )}
-          </div>
-        ))}
-        {loading && <p style={{ fontSize: '13px', color: 'var(--text-muted)', fontStyle: 'italic' }}>AI Copilot is thinking...</p>}
+          ))}
+        </div>
       </div>
 
-      {/* Input bar */}
-      <form onSubmit={handleSendQuestion} style={{ display: 'flex', gap: '10px' }}>
-        <input
-          type="text"
-          className="form-input"
-          placeholder="Ask anything about this opportunity (e.g. stipend, deadline, prerequisites)..."
-          value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-          required
-        />
-        <button type="submit" className="btn btn-primary" disabled={loading}>
-          <Send size={18} /> Send
-        </button>
-      </form>
+      {/* Main Chat Area */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        
+        {/* Header */}
+        <div className="glass-panel" style={{ padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ background: 'var(--accent-light)', padding: '10px', borderRadius: '12px', display: 'flex' }}>
+              <Bot size={24} color="var(--accent-primary)" />
+            </div>
+            <div>
+              <h1 style={{ fontSize: '20px', fontWeight: '800' }}>AI Opportunity Copilot</h1>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                Persistent context-aware Q&A and guidance.
+              </p>
+            </div>
+          </div>
 
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--bg-tertiary)', padding: '8px 12px', borderRadius: 'var(--radius-md)' }}>
+            <Building2 size={16} color="var(--text-muted)" />
+            <select 
+              className="form-select" 
+              value={selectedOppId} 
+              onChange={(e) => setSelectedOppId(e.target.value)}
+              style={{ padding: '4px 8px', fontSize: '13px' }}
+            >
+              <option value="">General Inquiries</option>
+              {opportunities.map(o => (
+                <option key={o.id} value={o.id}>{o.organization} — {o.title}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {error && (
+          <div style={{ padding: '12px', background: 'var(--error-light)', color: 'var(--error-color)', borderRadius: '8px', fontSize: '13px' }}>
+            {error}
+          </div>
+        )}
+
+        {/* Quick Actions */}
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <button onClick={() => handleQuickAction('eligibility')} className="btn btn-secondary btn-sm" disabled={loading || !selectedOppId}>
+            <ShieldCheck size={16} color="var(--accent-primary)" /> Check My Eligibility
+          </button>
+          <button onClick={() => handleQuickAction('checklist')} className="btn btn-secondary btn-sm" disabled={loading || !selectedOppId}>
+            <ListChecks size={16} color="var(--accent-secondary)" /> Generate Document Checklist
+          </button>
+        </div>
+
+        {/* Chat Box */}
+        <div className="card" style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px', padding: '24px' }}>
+          {messages.map((msg, idx) => (
+            <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: msg.sender === 'user' ? 'flex-end' : 'flex-start' }}>
+              <div style={{
+                maxWidth: '80%',
+                padding: '12px 16px',
+                borderRadius: '16px',
+                background: msg.sender === 'user' ? 'var(--accent-primary)' : 'var(--bg-tertiary)',
+                color: msg.sender === 'user' ? '#ffffff' : 'var(--text-primary)',
+                fontSize: '14px',
+                lineHeight: '1.5',
+                whiteSpace: 'pre-line'
+              }}>
+                {msg.text}
+              </div>
+
+              {msg.sender === 'bot' && msg.source && msg.source !== 'system' && (
+                <span style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Sparkles size={12} /> Grounded Output
+                </span>
+              )}
+            </div>
+          ))}
+          {loading && <p style={{ fontSize: '13px', color: 'var(--text-muted)', fontStyle: 'italic' }}>AI Copilot is thinking...</p>}
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Input Form */}
+        <form onSubmit={handleSendQuestion} style={{ display: 'flex', gap: '10px' }}>
+          <input
+            type="text"
+            className="form-input"
+            placeholder="Ask your copilot anything..."
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+            disabled={loading || !selectedConvId}
+            required
+            style={{ flex: 1 }}
+          />
+          <button type="submit" className="btn btn-primary" disabled={loading || !selectedConvId}>
+            <Send size={18} /> Send
+          </button>
+        </form>
+
+      </div>
     </div>
   );
 };

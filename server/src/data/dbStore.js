@@ -21,6 +21,8 @@ let profilesTable = [];
 let opportunitiesTable = [...seedOpportunities];
 let userOpportunitiesTable = [];
 let aiInteractionsTable = [];
+let conversationsTable = [];
+let messagesTable = [];
 
 // Helper to generate IDs
 const generateId = () => crypto.randomUUID();
@@ -945,6 +947,105 @@ const dbStore = {
       ai_usage_count: baseData.ai_usage_count,
       subscription_status: sub ? sub.status : null
     };
+  },
+
+  // ==========================================
+  // AI COPILOT CONVERSATIONS
+  // ==========================================
+
+  async createConversation(userId, { title = 'New Conversation', opportunityId = null } = {}) {
+    if (useDb()) {
+      const dbClient = getClient(userId);
+      const newConv = { id: generateId(), user_id: userId, title, opportunity_id: opportunityId, created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+      const { data, error } = await dbClient.from('conversations').insert([newConv]).select().single();
+      // If error (e.g. table doesn't exist yet in Supabase), fallback to in-memory for dev/test
+      if (error) {
+        console.warn('Supabase insert failed for conversations, falling back to memory. Error:', error.message);
+      } else {
+        return { id: data.id, userId: data.user_id, title: data.title, opportunityId: data.opportunity_id, createdAt: data.created_at, updatedAt: data.updated_at };
+      }
+    }
+    const conv = { id: generateId(), userId, title, opportunityId, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+    conversationsTable.push(conv);
+    return conv;
+  },
+
+  async getConversations(userId) {
+    if (useDb()) {
+      const dbClient = getClient(userId);
+      const { data, error } = await dbClient.from('conversations').select('*').eq('user_id', userId).order('updated_at', { ascending: false });
+      if (!error && data) {
+        return data.map(d => ({ id: d.id, userId: d.user_id, title: d.title, opportunityId: d.opportunity_id, createdAt: d.created_at, updatedAt: d.updated_at }));
+      }
+    }
+    return conversationsTable
+      .filter(c => c.userId === userId)
+      .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+  },
+
+  async getConversation(userId, conversationId) {
+    if (useDb()) {
+      const dbClient = getClient(userId);
+      const { data: conv, error: convErr } = await dbClient.from('conversations').select('*').eq('id', conversationId).eq('user_id', userId).single();
+      if (!convErr && conv) {
+        const { data: msgs, error: msgErr } = await dbClient.from('messages').select('*').eq('conversation_id', conversationId).order('created_at', { ascending: true });
+        const messages = (!msgErr && msgs) ? msgs.map(m => ({ id: m.id, role: m.role, content: m.content, createdAt: m.created_at })) : [];
+        return {
+          id: conv.id, userId: conv.user_id, title: conv.title, opportunityId: conv.opportunity_id, createdAt: conv.created_at, updatedAt: conv.updated_at,
+          messages
+        };
+      }
+    }
+    const conv = conversationsTable.find(c => c.id === conversationId && c.userId === userId);
+    if (!conv) return null;
+    const messages = messagesTable
+      .filter(m => m.conversationId === conversationId)
+      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    return { ...conv, messages };
+  },
+
+  async addMessage(userId, conversationId, role, content) {
+    const conv = await this.getConversation(userId, conversationId);
+    if (!conv) throw new Error('Conversation not found');
+
+    const msg = {
+      id: generateId(),
+      conversationId,
+      role,
+      content,
+      createdAt: new Date().toISOString()
+    };
+
+    if (useDb()) {
+      const dbClient = getClient(userId);
+      const newMsg = { id: msg.id, conversation_id: conversationId, role, content, created_at: msg.createdAt };
+      const { error } = await dbClient.from('messages').insert([newMsg]);
+      if (!error) {
+        await dbClient.from('conversations').update({ updated_at: msg.createdAt }).eq('id', conversationId);
+        return msg;
+      }
+    }
+    
+    messagesTable.push(msg);
+    const cIdx = conversationsTable.findIndex(c => c.id === conversationId);
+    if (cIdx >= 0) conversationsTable[cIdx].updatedAt = msg.createdAt;
+    
+    return msg;
+  },
+
+  async deleteConversation(userId, conversationId) {
+    if (useDb()) {
+      const dbClient = getClient(userId);
+      const { error } = await dbClient.from('conversations').delete().eq('id', conversationId).eq('user_id', userId);
+      if (!error) return true;
+    }
+    const idx = conversationsTable.findIndex(c => c.id === conversationId && c.userId === userId);
+    if (idx !== -1) {
+      conversationsTable.splice(idx, 1);
+      messagesTable = messagesTable.filter(m => m.conversationId !== conversationId);
+      return true;
+    }
+    return false;
   }
 };
 

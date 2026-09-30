@@ -379,16 +379,27 @@ Generate 3-5 specific checklist items. Ensure they are actionable. Do not invent
   /**
    * 4. Copilot Q&A
    */
-  async answerQuestion(opportunity, userQuestion, studentProfile) {
+  async answerQuestion(opportunity, userQuestion, studentProfile, history = []) {
     if (this.apiKey) {
+      // Format history
+      const historyText = history.length 
+        ? "\nChat History:\n" + history.slice(-6).map(m => `${m.role === 'user' ? 'Student' : 'Assistant'}: ${m.content}`).join('\n')
+        : "";
+
       const prompt = `You are an AI opportunity copilot answering a student's question about an opportunity.
 Opportunity Details:
-- Title: ${opportunity.title}
-- Organization: ${opportunity.organization}
-- Category: ${opportunity.category}
-- Deadline: ${opportunity.deadline || 'UNKNOWN'}
-- Requirements: ${JSON.stringify(opportunity.requirements || [])}
-- Description: ${opportunity.description}
+- Title: ${opportunity?.title || 'General Inquiries'}
+- Organization: ${opportunity?.organization || 'Unknown'}
+- Category: ${opportunity?.category || 'General'}
+- Deadline: ${opportunity?.deadline || 'UNKNOWN'}
+- Requirements: ${JSON.stringify(opportunity?.requirements || [])}
+- Description: ${opportunity?.description || 'N/A'}
+
+Student Profile:
+- Education: ${studentProfile?.educationLevel || 'UNKNOWN'}, ${studentProfile?.major || 'UNKNOWN'}
+- Skills: ${studentProfile?.skills?.join(', ') || 'UNKNOWN'}
+- Career Goals: ${studentProfile?.careerGoals || 'UNKNOWN'}
+${historyText}
 
 Student Question: "${userQuestion}"
 

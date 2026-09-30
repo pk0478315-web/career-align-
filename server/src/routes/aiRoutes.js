@@ -14,6 +14,13 @@ router.post('/eligibility-check', aiController.checkEligibility);
 router.post('/checklist', aiController.generateChecklist);
 router.post('/chat', aiController.copilotChat);
 
+// Persistent Conversations
+router.get('/conversations', aiController.getConversations);
+router.post('/conversations', aiController.createConversation);
+router.get('/conversations/:id', aiController.getConversation);
+router.delete('/conversations/:id', aiController.deleteConversation);
+router.post('/conversations/:id/messages', aiController.sendMessage);
+
 // Advanced AI usage requires ADVANCED_MATCHING entitlement
 router.post('/align', requireFeature(FEATURES.ADVANCED_MATCHING), aiController.alignCareer);
 

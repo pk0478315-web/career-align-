@@ -209,5 +209,74 @@ module.exports = {
   checkEligibility,
   generateChecklist,
   copilotChat,
-  alignCareer
+  alignCareer,
+  
+  // Persistent Conversations
+  getConversations: async (req, res, next) => {
+    try {
+      const convs = await dbStore.getConversations(req.user.id);
+      return sendSuccess(res, convs);
+    } catch (e) { next(e); }
+  },
+
+  createConversation: async (req, res, next) => {
+    try {
+      const { title, opportunityId } = req.body;
+      const conv = await dbStore.createConversation(req.user.id, { title, opportunityId });
+      return sendSuccess(res, conv, 201);
+    } catch (e) { next(e); }
+  },
+
+  getConversation: async (req, res, next) => {
+    try {
+      const conv = await dbStore.getConversation(req.user.id, req.params.id);
+      if (!conv) return sendError(res, 'Conversation not found', 404);
+      return sendSuccess(res, conv);
+    } catch (e) { next(e); }
+  },
+
+  deleteConversation: async (req, res, next) => {
+    try {
+      const success = await dbStore.deleteConversation(req.user.id, req.params.id);
+      if (!success) return sendError(res, 'Conversation not found', 404);
+      return sendSuccess(res, { deleted: true });
+    } catch (e) { next(e); }
+  },
+
+  sendMessage: async (req, res, next) => {
+    try {
+      const { content } = req.body;
+      const conversationId = req.params.id;
+      if (!content || !content.trim()) return sendError(res, 'Content is required', 400);
+
+      const conv = await dbStore.getConversation(req.user.id, conversationId);
+      if (!conv) return sendError(res, 'Conversation not found', 404);
+
+      // Add user message
+      await dbStore.addMessage(req.user.id, conversationId, 'user', content);
+
+      // Build context
+      let opportunity = null;
+      if (conv.opportunityId) {
+        opportunity = await dbStore.getOpportunityById(conv.opportunityId);
+      }
+      const profile = await dbStore.getProfile(req.user.id);
+      
+      // We will leverage the answerQuestion method and pass history or context.
+      const answerData = await aiService.answerQuestion(
+        opportunity || { title: 'General Inquiries', category: 'general', description: 'Assisting students in discovering and tracking verified opportunities.' },
+        content,
+        profile,
+        conv.messages
+      );
+
+      // Add AI message
+      const aiMsg = await dbStore.addMessage(req.user.id, conversationId, 'assistant', answerData.answer);
+
+      await dbStore.logAiInteraction(req.user.id, conv.opportunityId, 'chat_message', { conversationId, content }, answerData);
+      await dbStore.incrementAiUsage(req.user.id);
+
+      return sendSuccess(res, aiMsg);
+    } catch (e) { next(e); }
+  }
 };
