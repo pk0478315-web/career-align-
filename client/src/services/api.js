@@ -1,7 +1,12 @@
 import axios from 'axios';
 
-// Get base URL from environment or default to local '/api'
-let envBaseUrl = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api').trim();
+let envBaseUrl = import.meta.env.VITE_API_BASE_URL;
+if (!envBaseUrl) {
+  // Dynamically use the current hostname to support network IP testing (e.g., 192.168.x.x)
+  const host = window.location.hostname;
+  envBaseUrl = `http://${host}:5000/api`;
+}
+envBaseUrl = envBaseUrl.trim();
 
 // Ensure the base URL ends with '/api'
 if (envBaseUrl.startsWith('http')) {
