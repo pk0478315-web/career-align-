@@ -377,8 +377,67 @@ async function runTests() {
     fs.unlinkSync(dummyPdfPath);
     fs.unlinkSync(dummyTxtPath);
 
+    // 10. Notifications & Reminders
+    console.log('\n--- 10. Notifications & Reminders ---');
+    
+    // First setup an opportunity with a deadline tomorrow
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    await request(server, {
+      path: `/api/my-opportunities/${trackedRecordId}`,
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${authToken}` }
+    }, { 
+      status: 'planned' 
+    });
+    
+    // Test Preferences
+    const prefRes = await request(server, {
+      path: '/api/notifications/preferences',
+      method: 'GET',
+      headers: { Authorization: `Bearer ${authToken}` }
+    });
+    assert(prefRes.status === 200, 'GET /api/notifications/preferences returns 200');
+    assert(prefRes.body.data.inAppEnabled === true, 'Default preference is inAppEnabled=true');
+
+    const updatePrefRes = await request(server, {
+      path: '/api/notifications/preferences',
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${authToken}` }
+    }, { roadmapReminders: false });
+    assert(updatePrefRes.status === 200, 'PUT /api/notifications/preferences updates correctly');
+    assert(updatePrefRes.body.data.roadmapReminders === false, 'Updated preference persisted');
+
+    // Test Notifications Generation & Retrieval
+    const notifRes = await request(server, {
+      path: '/api/notifications',
+      method: 'GET',
+      headers: { Authorization: `Bearer ${authToken}` }
+    });
+    assert(notifRes.status === 200, 'GET /api/notifications returns 200');
+    assert(Array.isArray(notifRes.body.data.notifications), 'Notifications array returned');
+    
+    if (notifRes.body.data.notifications.length > 0) {
+      const notifId = notifRes.body.data.notifications[0].id;
+      
+      const readRes = await request(server, {
+        path: `/api/notifications/${notifId}/read`,
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${authToken}` }
+      });
+      assert(readRes.status === 200, 'PATCH /api/notifications/:id/read marks as read');
+      assert(readRes.body.data.isRead === true, 'Notification isRead set to true');
+      
+      const readAllRes = await request(server, {
+        path: '/api/notifications/read-all',
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${authToken}` }
+      });
+      assert(readAllRes.status === 200, 'PATCH /api/notifications/read-all succeeds');
+    }
+
     // 14. Export & Import
-    console.log('\n--- 7. Export, Backup & Import ---');
+    console.log('\n--- 11. Export, Backup & Import ---');
     const exportJsonRes = await request(server, {
       path: '/api/export?format=json',
       method: 'GET',

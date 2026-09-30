@@ -11,8 +11,11 @@ import {
   LogOut, 
   LogIn,
   Menu,
-  X
+  X,
+  Bell
 } from 'lucide-react';
+import { api } from '../services/api';
+import { NotificationCenter } from './NotificationCenter';
 
 export const Navbar = () => {
   const { user, isAuthenticated, logout, theme, selectTheme, themes } = useAuth();
@@ -20,9 +23,19 @@ export const Navbar = () => {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [themeDropdownOpen, setThemeDropdownOpen] = useState(false);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const themeDropdownRef = useRef(null);
 
   const isActive = (path) => location.pathname === path;
+
+  useEffect(() => {
+    if (user) {
+      api.getNotifications().then(res => {
+        if (res.success) setUnreadCount(res.data.unreadCount);
+      }).catch(() => {});
+    }
+  }, [user, isNotifOpen]); // Re-fetch when notif center closes/opens
 
   const currentThemeObj = (themes || []).find(t => t.id === theme) || themes?.[0];
 
@@ -178,6 +191,25 @@ export const Navbar = () => {
 
           {isAuthenticated ? (
             <div className="desktop-nav" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <button 
+                onClick={() => setIsNotifOpen(true)} 
+                className="btn btn-secondary btn-sm" 
+                style={{ position: 'relative', padding: '8px' }}
+                title="Notifications"
+              >
+                <Bell size={16} />
+                {unreadCount > 0 && (
+                  <span style={{
+                    position: 'absolute', top: '-4px', right: '-4px',
+                    background: 'var(--status-rejected)', color: 'white',
+                    fontSize: '10px', fontWeight: 'bold',
+                    padding: '2px 6px', borderRadius: '10px',
+                    lineHeight: 1
+                  }}>
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </button>
               <Link to="/settings" className="btn btn-secondary btn-sm">
                 <Settings size={16} />
                 <span>{user.displayName || 'Profile'}</span>
@@ -227,6 +259,14 @@ export const Navbar = () => {
 
           {isAuthenticated ? (
             <>
+              <button onClick={() => { setIsNotifOpen(true); setMobileMenuOpen(false); }} className="btn btn-secondary" style={{ justifyContent: 'flex-start', position: 'relative' }}>
+                <Bell size={18} /> Notifications
+                {unreadCount > 0 && (
+                  <span className="badge badge-scholarship" style={{ background: 'var(--status-rejected)', color: 'white', marginLeft: 'auto' }}>
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
               <Link to="/settings" onClick={() => setMobileMenuOpen(false)} className="btn btn-secondary" style={{ justifyContent: 'flex-start' }}>
                 <Settings size={18} /> Settings ({user.displayName})
               </Link>
@@ -277,6 +317,8 @@ export const Navbar = () => {
           </div>
         </div>
       )}
+
+      <NotificationCenter isOpen={isNotifOpen} onClose={() => setIsNotifOpen(false)} />
 
     </header>
   );

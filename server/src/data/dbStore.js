@@ -646,6 +646,167 @@ const dbStore = {
       this.resumesTable.push(newResume);
     }
     return this.resumesTable.find(r => r.userId === userId);
+  },
+
+  // --- NOTIFICATIONS & PREFERENCES ---
+  async getNotificationPreferences(userId) {
+    if (useDb()) {
+      const dbClient = getClient(userId);
+      const { data, error } = await dbClient.from('notification_preferences').select('*').eq('user_id', userId).single();
+      if (error || !data) {
+        // Return default preferences
+        return {
+          userId,
+          inAppEnabled: true,
+          emailEnabled: false,
+          deadlineReminders: true,
+          applicationReminders: true,
+          roadmapReminders: true
+        };
+      }
+      return {
+        userId: data.user_id,
+        inAppEnabled: data.in_app_enabled,
+        emailEnabled: data.email_enabled,
+        deadlineReminders: data.deadline_reminders,
+        applicationReminders: data.application_reminders,
+        roadmapReminders: data.roadmap_reminders
+      };
+    }
+    this.notificationPrefsTable = this.notificationPrefsTable || [];
+    const prefs = this.notificationPrefsTable.find(p => p.userId === userId);
+    return prefs || { userId, inAppEnabled: true, emailEnabled: false, deadlineReminders: true, applicationReminders: true, roadmapReminders: true };
+  },
+
+  async updateNotificationPreferences(userId, prefs) {
+    if (useDb()) {
+      const dbClient = getClient(userId);
+      const updates = {
+        in_app_enabled: prefs.inAppEnabled,
+        email_enabled: prefs.emailEnabled,
+        deadline_reminders: prefs.deadlineReminders,
+        application_reminders: prefs.applicationReminders,
+        roadmap_reminders: prefs.roadmapReminders,
+        updated_at: new Date().toISOString()
+      };
+      
+      const { data: existing } = await dbClient.from('notification_preferences').select('user_id').eq('user_id', userId).single();
+      if (existing) {
+        await dbClient.from('notification_preferences').update(updates).eq('user_id', userId);
+      } else {
+        await dbClient.from('notification_preferences').insert([{ user_id: userId, ...updates }]);
+      }
+      return this.getNotificationPreferences(userId);
+    }
+    this.notificationPrefsTable = this.notificationPrefsTable || [];
+    const index = this.notificationPrefsTable.findIndex(p => p.userId === userId);
+    const updated = { userId, ...prefs, updatedAt: new Date().toISOString() };
+    if (index >= 0) this.notificationPrefsTable[index] = updated;
+    else this.notificationPrefsTable.push(updated);
+    return updated;
+  },
+
+  async getNotifications(userId) {
+    if (useDb()) {
+      const dbClient = getClient(userId);
+      const { data, error } = await dbClient.from('notifications')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return (data || []).map(n => ({
+        id: n.id,
+        userId: n.user_id,
+        title: n.title,
+        message: n.message,
+        type: n.type,
+        linkUrl: n.link_url,
+        isRead: n.is_read,
+        relatedEntityId: n.related_entity_id,
+        deduplicationKey: n.deduplication_key,
+        createdAt: n.created_at
+      }));
+    }
+    this.notificationsTable = this.notificationsTable || [];
+    return this.notificationsTable
+      .filter(n => n.userId === userId)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, 50);
+  },
+
+  async createNotification(notification) {
+    const { userId, title, message, type, linkUrl, relatedEntityId, deduplicationKey } = notification;
+    if (useDb()) {
+      const dbClient = getClient(userId);
+      
+      // Check deduplication
+      if (deduplicationKey) {
+        const { data: existing } = await dbClient.from('notifications').select('id').eq('deduplication_key', deduplicationKey).single();
+        if (existing) return existing; // Skip duplicate
+      }
+      
+      const newNotif = {
+        user_id: userId,
+        title, message, type,
+        link_url: linkUrl || null,
+        related_entity_id: relatedEntityId || null,
+        deduplication_key: deduplicationKey || null,
+        is_read: false
+      };
+      
+      const { data, error } = await dbClient.from('notifications').insert([newNotif]).select().single();
+      if (error) {
+        if (error.code === '23505') return null; // Unique violation, ignore duplicate
+        throw error;
+      }
+      return data;
+    }
+    
+    this.notificationsTable = this.notificationsTable || [];
+    if (deduplicationKey && this.notificationsTable.find(n => n.deduplicationKey === deduplicationKey)) {
+      return null; // Skip duplicate
+    }
+    
+    const newNotif = {
+      id: generateId(),
+      userId, title, message, type, linkUrl, relatedEntityId, deduplicationKey,
+      isRead: false, createdAt: new Date().toISOString()
+    };
+    this.notificationsTable.push(newNotif);
+    return newNotif;
+  },
+
+  async markNotificationRead(userId, notificationId) {
+    if (useDb()) {
+      const dbClient = getClient(userId);
+      const { data, error } = await dbClient.from('notifications')
+        .update({ is_read: true, updated_at: new Date().toISOString() })
+        .eq('id', notificationId)
+        .eq('user_id', userId)
+        .select().single();
+      return !error && !!data;
+    }
+    this.notificationsTable = this.notificationsTable || [];
+    const n = this.notificationsTable.find(n => n.id === notificationId && n.userId === userId);
+    if (n) { n.isRead = true; return true; }
+    return false;
+  },
+
+  async markAllNotificationsRead(userId) {
+    if (useDb()) {
+      const dbClient = getClient(userId);
+      const { error } = await dbClient.from('notifications')
+        .update({ is_read: true, updated_at: new Date().toISOString() })
+        .eq('user_id', userId)
+        .eq('is_read', false);
+      return !error;
+    }
+    this.notificationsTable = this.notificationsTable || [];
+    this.notificationsTable.forEach(n => {
+      if (n.userId === userId) n.isRead = true;
+    });
+    return true;
   }
 };
 

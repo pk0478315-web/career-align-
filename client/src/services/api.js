@@ -88,5 +88,12 @@ export const api = {
     apiClient.get(`/export?format=${format}&scope=${scope}`),
   previewImport: (records) => apiClient.post('/import/preview', { records }),
   confirmImport: (records, onDuplicate = 'skip') => 
-    apiClient.post('/import/confirm', { records, onDuplicate })
+    apiClient.post('/import/confirm', { records, onDuplicate }),
+
+  // Notifications
+  getNotifications: () => apiClient.get('/notifications'),
+  markNotificationRead: (id) => apiClient.patch(`/notifications/${id}/read`),
+  markAllNotificationsRead: () => apiClient.patch('/notifications/read-all'),
+  getNotificationPreferences: () => apiClient.get('/notifications/preferences'),
+  updateNotificationPreferences: (payload) => apiClient.put('/notifications/preferences', payload)
 };
