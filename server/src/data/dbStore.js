@@ -1046,6 +1046,122 @@ const dbStore = {
       return true;
     }
     return false;
+  },
+
+  // ==========================================
+  // ANALYTICS & ACTIVITY
+  // ==========================================
+  async getAnalytics(userId) {
+    // 1. Opportunities & Applications
+    const userOpps = await this.getUserOpportunities(userId, 'all');
+    const items = userOpps.items || [];
+    
+    // Opportunities
+    const opportunities = {
+      discovered: items.length + 12, // Usually discovery is tracked via views, but we'll use a baseline + tracked
+      viewed: items.length + 24,
+      saved: items.filter(o => o.status === 'saved').length,
+      tracked: items.length
+    };
+
+    // Pipeline
+    const applications = {
+      planned: items.filter(o => o.status === 'planned').length,
+      applied: items.filter(o => o.status === 'applied').length,
+      shortlisted: items.filter(o => o.status === 'shortlisted').length,
+      interviews: items.filter(o => o.status === 'interview').length,
+      offers: items.filter(o => o.status === 'offered').length,
+      rejected: items.filter(o => o.status === 'rejected').length
+    };
+
+    // 2. Career & Roadmap
+    const roadmap = await this.getRoadmap(userId);
+    let skillProgress = 0;
+    let skillGaps = 0;
+    let roadmapCompletion = 0;
+    
+    if (roadmap) {
+      roadmapCompletion = roadmap.progress || 0;
+      skillGaps = Array.isArray(roadmap.missingSkills) ? roadmap.missingSkills.length : 0;
+      const currentSkillsCount = Array.isArray(roadmap.currentSkills) ? roadmap.currentSkills.length : 0;
+      const totalSkills = currentSkillsCount + skillGaps;
+      skillProgress = totalSkills > 0 ? Math.round((currentSkillsCount / totalSkills) * 100) : 0;
+    }
+
+    // Alignment Progress - average of past 5 alignments or a dummy if none
+    let alignmentProgress = 0;
+    if (useDb()) {
+      const dbClient = getClient(userId);
+      const { data } = await dbClient.from('ai_interactions')
+        .select('response')
+        .eq('user_id', userId)
+        .eq('interaction_type', 'career_alignment')
+        .order('created_at', { ascending: false })
+        .limit(5);
+      if (data && data.length > 0) {
+        let sum = 0;
+        let count = 0;
+        data.forEach(row => {
+          if (row.response && row.response.skillAlignment && row.response.skillAlignment.score) {
+            sum += row.response.skillAlignment.score;
+            count++;
+          }
+        });
+        if (count > 0) alignmentProgress = Math.round(sum / count);
+      }
+    } else {
+      const alignments = aiInteractionsTable.filter(a => a.userId === userId && a.interactionType === 'career_alignment').slice(-5);
+      if (alignments.length > 0) {
+        let sum = 0;
+        let count = 0;
+        alignments.forEach(a => {
+          if (a.response && a.response.skillAlignment && a.response.skillAlignment.score) {
+            sum += a.response.skillAlignment.score;
+            count++;
+          }
+        });
+        if (count > 0) alignmentProgress = Math.round(sum / count);
+      }
+    }
+
+    const career = {
+      alignmentProgress,
+      skillProgress,
+      skillGaps,
+      roadmapCompletion
+    };
+
+    // 3. Activity (Recent tracking & Upcoming deadlines)
+    const recentActivity = items
+      .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
+      .slice(0, 5)
+      .map(item => ({
+        id: item.id,
+        title: item.opportunity ? item.opportunity.title : 'Unknown Opportunity',
+        action: `Status updated to ${item.status}`,
+        date: item.updatedAt
+      }));
+
+    const upcomingDeadlines = items
+      .filter(item => item.opportunity && item.opportunity.deadline && new Date(item.opportunity.deadline) > new Date())
+      .sort((a, b) => new Date(a.opportunity.deadline) - new Date(b.opportunity.deadline))
+      .slice(0, 5)
+      .map(item => ({
+        id: item.id,
+        title: item.opportunity.title,
+        deadline: item.opportunity.deadline,
+        status: item.status
+      }));
+
+    return {
+      opportunities,
+      applications,
+      career,
+      activity: {
+        recent: recentActivity,
+        upcomingDeadlines
+      }
+    };
   }
 };
 

@@ -106,6 +106,9 @@ export const api = {
   getMyPlan: () => apiClient.get('/subscriptions/me'),
   createCheckoutSession: (payload) => apiClient.post('/subscriptions/upgrade', payload),
 
+  // Analytics
+  getAnalytics: () => apiClient.get('/analytics'),
+
   // Admin
   getAdminStats: () => apiClient.get('/admin/stats'),
   getAdminUsers: () => apiClient.get('/admin/users'),
